@@ -1,0 +1,12 @@
+[package]
+name = "transpiler"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+language = { path = "../language" }
+tree-sitter = "0.25.8"
+tree-sitter-c = "0.24.1"
+
+[build-dependencies]
+cc = "*"
