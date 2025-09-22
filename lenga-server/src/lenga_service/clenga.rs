@@ -3,6 +3,8 @@ use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
+pub mod node_parser;
+
 pub mod proto {
     tonic::include_proto!("c.lenga");
 }
@@ -16,9 +18,19 @@ use proto::{
 // Objects
 use proto::{UnknownNode, language_object::LanguageObject as CLanguageObject};
 
-#[derive(Debug, Default)]
+use crate::lenga_service::clenga::node_parser::parse_file;
+
+#[derive(Debug)]
 pub struct CLengaService {
-    asts: Arc<Mutex<HashMap<String, SourceFile>>>,
+    files: Arc<Mutex<HashMap<String, SourceFile>>>,
+}
+
+impl Default for CLengaService {
+    fn default() -> Self {
+        Self {
+            files: Default::default(),
+        }
+    }
 }
 
 #[tonic::async_trait]
@@ -38,13 +50,13 @@ impl CLenga for CLengaService {
     ) -> Result<Response<SourceFile>, Status> {
         let req = request.into_inner();
 
-        let mut asts = self.asts.lock().unwrap();
-        let ast = match asts.get(&req.path) {
+        let mut files = self.files.lock().unwrap();
+        let ast = match files.get(&req.path) {
             Some(file_ast) => file_ast.clone(),
             None => {
-                let file_ast: SourceFile = todo!();
-                asts.insert(req.path.clone(), file_ast.clone());
-                file_ast
+                let file = parse_file(&req.path);
+                files.insert(req.path.clone(), file.clone());
+                file
             }
         };
 

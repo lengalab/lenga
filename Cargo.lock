@@ -528,6 +528,7 @@ dependencies = [
 name = "lenga-server"
 version = "0.1.0"
 dependencies = [
+ "language",
  "prost",
  "prost-types",
  "tokio",
