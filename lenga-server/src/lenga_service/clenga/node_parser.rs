@@ -1,7 +1,6 @@
 use std::{fs::File, io::Read};
 
 use language::language::{c::{self, C}, Language};
-use uuid::Uuid;
 
 use crate::lenga_service::clenga::proto;
 
@@ -176,7 +175,7 @@ fn source_file_to_proto(
     }
 
     proto::SourceFile {
-        id: Uuid::new_v4().to_string(),
+        id: src_file.id.to_string(),
         code,
     }
 }
@@ -207,7 +206,7 @@ fn binary_expression_to_proto(
     ));
 
     proto::BinaryExpression {
-        id: Uuid::new_v4().to_string(),
+        id: binary_expression.id.to_string(),
         left: left_proto,
         operator: binary_expression.operator,
         right: right_proto,
@@ -234,7 +233,7 @@ fn comment_to_proto(
     comment: c::language_object::comment::Comment
 ) -> proto::Comment {
     proto::Comment {
-        id: Uuid::new_v4().to_string(),
+        id: comment.id.to_string(),
         content: comment.content,
     }
 }
@@ -259,7 +258,7 @@ fn else_clause_to_proto(
     let compound_statement = compound_statement_to_proto(else_clause.compound_statement);
 
     proto::ElseClause {
-        id: Uuid::new_v4().to_string(),
+        id: else_clause.id.to_string(),
         condition: condition,
         compound_statement: Some(compound_statement),
     }    
@@ -333,7 +332,7 @@ fn if_statement_to_proto(
     let else_clause = if_statement.else_clause.map(|else_clause| Box::new(else_clause_to_proto(else_clause)));
 
     proto::IfStatement {
-        id: Uuid::new_v4().to_string(),
+        id: if_statement.id.to_string(),
         condition: Some(Box::new(condition)),
         compound_statement: Some(compound_statement),
         else_clause: else_clause,
@@ -344,7 +343,7 @@ fn number_literal_to_proto(
     number_literal: c::language_object::number_literal::NumberLiteral,
 ) -> proto::NumberLiteral {
     proto::NumberLiteral {
-        id: Uuid::new_v4().to_string(),
+        id: number_literal.id.to_string(),
         value: number_literal.value,
     }
 }
@@ -353,7 +352,7 @@ fn preproc_include_to_proto(
     preproc_include: c::language_object::preproc_include::PreprocInclude,
 ) -> proto::PreprocInclude {
     proto::PreprocInclude {
-        id: Uuid::new_v4().to_string(),
+        id: preproc_include.id.to_string(),
         content: preproc_include.content,
     }
 }
@@ -374,7 +373,7 @@ fn return_statement_to_proto(
     let value = c_language_object_to_proto(*return_statement.value);
 
     proto::ReturnStatement {
-        id: Uuid::new_v4().to_string(),
+        id: return_statement.id.to_string(),
         value: Some(Box::new(value)),
     }
 }
@@ -383,7 +382,7 @@ fn string_literal_to_proto(
     string_literal: c::language_object::string_literal::StringLiteral,
 ) -> proto::StringLiteral {
     proto::StringLiteral {
-        id: Uuid::new_v4().to_string(),
+        id: string_literal.id.to_string(),
         value: string_literal.value,
     }
 }
@@ -397,7 +396,7 @@ fn compound_statement_to_proto(
     }
 
     proto::CompoundStatement {
-        id: Uuid::new_v4().to_string(),
+        id: compound_statement.id.to_string(),
         code_block: code_block,
     }
 }
