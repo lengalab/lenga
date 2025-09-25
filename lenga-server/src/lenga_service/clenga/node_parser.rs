@@ -223,7 +223,7 @@ fn call_expression_to_proto(
 
     proto::CallExpression {
         id: call_expression.id.to_string(),
-        id_declaration: "".to_string(), //TODO: Get the calle id instead of the identifier
+        id_declaration: call_expression.id_declaration.to_string(),
         identifier: call_expression.identifier,
         argument_list: argument_list,
     }
@@ -362,7 +362,7 @@ fn reference_to_proto(
 ) -> proto::Reference {
     proto::Reference {
         id: reference.id.to_string(),
-        declaration_id: "".to_string(), //TODO: Get the declaration id instead of the identifier
+        declaration_id: reference.declaration_id.to_string(), 
         identifier: reference.identifier,
     }
 }

@@ -272,11 +272,11 @@ impl<'a> TreeSitterParser<'a> {
     ) -> Result<Reference, TreeSitterParserError> {
         assert_eq!(node.kind(), "identifier");
         let identifier = node.content(source_code).to_string();
-        let id = self
+        let declaration_id = self
             .context
             .get_symbol_id(&identifier, false)
             .ok_or(TreeSitterParserError::MissingSymbol(identifier.to_string()))?;
-        Ok(Reference { id, identifier })
+        Ok(Reference { id: Uuid::new_v4(), declaration_id, identifier })
     }
 
     pub fn number_literal_from_tree_sitter_node(
@@ -442,7 +442,7 @@ impl<'a> TreeSitterParser<'a> {
         let identifier_node = node.child(0).unwrap();
         assert_eq!(identifier_node.kind(), "identifier");
         let identifier = identifier_node.content(source_code).to_string();
-        let id = self.context.get_or_insert_symbol(&identifier, true); // TODO this symbols should be registered from imported libraries
+        let id_declaration = self.context.get_symbol_id(&identifier, true).unwrap_or(Uuid::nil()); // TODO this symbols should be registered from imported libraries
 
         // TODO check if this works and replace on function_declaration.rs
         let argument_list_node = node.child(1).unwrap();
@@ -467,7 +467,8 @@ impl<'a> TreeSitterParser<'a> {
         }
 
         Ok(CallExpression {
-            id,
+            id: Uuid::new_v4(),
+            id_declaration,
             identifier,
             argument_list,
         })

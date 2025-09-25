@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::{
     language::c::{
         language_object::{
@@ -175,12 +177,16 @@ impl<'a> NodeParser<'a> {
 
     fn call_expression_from_node(&mut self, node: Node) -> Result<CallExpression, NodeParserError> {
         assert_eq!(node.node_type, NodeType::CallExpression.as_u64());
+
+        let (id_declaration, identifier) = match Uuid::parse_str(&node.content) {
+            Ok(id_declaration) => (id_declaration, self.context.get_symbol_identifier(&id_declaration).unwrap()),
+            Err(_) => (Uuid::nil(), node.content),
+        };
+            
         Ok(CallExpression {
             id: node.id,
-            identifier: match self.context.get_symbol_identifier(&node.id) {
-                Some(indentifier) => indentifier,
-                None => node.content,
-            },
+            id_declaration,
+            identifier,
             argument_list: node
                 .children
                 .into_iter()
@@ -371,9 +377,13 @@ impl<'a> NodeParser<'a> {
 
     fn reference_from_node(&mut self, node: Node) -> Result<Reference, NodeParserError> {
         assert_eq!(node.node_type, NodeType::Reference.as_u64());
+
+        let declaration_id = Uuid::parse_str(&node.content).unwrap();
+
         Ok(Reference {
             id: node.id,
-            identifier: self.context.get_symbol_identifier(&node.id).unwrap(),
+            declaration_id,
+            identifier: self.context.get_symbol_identifier(&declaration_id).unwrap(),
         })
     }
 

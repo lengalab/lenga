@@ -671,8 +671,8 @@ int main() {
                                 assert_eq!(b_assignment_identifier, "b");
                                 assert_eq!(b_assignment_id, b_declaration_id);
                                 match b_assignment_value.as_ref() {
-                                    CLanguageObject::Reference(Reference { identifier, id })
-                                        if identifier == "a" && id == a_declaration_id => {}
+                                    CLanguageObject::Reference(Reference { identifier, declaration_id, .. })
+                                        if identifier == "a" && declaration_id == a_declaration_id => {}
                                     _ => panic!(),
                                 }
 
@@ -695,16 +695,18 @@ int main() {
                                         match left.as_ref() {
                                             CLanguageObject::Reference(Reference {
                                                 identifier,
-                                                id,
+                                                declaration_id,
+                                                ..
                                             }) if identifier == "a"
-                                                && id == inner_a_declaration_id => {}
+                                                && declaration_id == inner_a_declaration_id => {}
                                             _ => panic!(),
                                         }
                                         match right.as_ref() {
                                             CLanguageObject::Reference(Reference {
                                                 identifier,
-                                                id,
-                                            }) if identifier == "b" && id == b_declaration_id => {}
+                                                declaration_id,
+                                                ..
+                                            }) if identifier == "b" && declaration_id == b_declaration_id => {}
                                             _ => panic!(),
                                         }
                                     }
@@ -792,8 +794,8 @@ int main() {
                         match code_block.as_slice() {
                             [CLanguageObject::ReturnStatement(ReturnStatement { value, .. })] => {
                                 match &**value {
-                                    CLanguageObject::Reference(Reference { id, identifier }) => {
-                                        assert_eq!(id, param_a_id);
+                                    CLanguageObject::Reference(Reference { declaration_id, identifier , ..}) => {
+                                        assert_eq!(declaration_id, param_a_id);
                                         assert_eq!(identifier, "a");
                                     }
                                     _ => {
@@ -858,9 +860,10 @@ int main() {
                         assert_eq!(result_identifier, "result");
                         match value.as_ref() {
                             CLanguageObject::CallExpression(CallExpression {
-                                id: call_id,
+                                id_declaration: call_id,
                                 identifier: call_identifier,
                                 argument_list,
+                                ..
                             }) => {
                                 assert_eq!(call_identifier, "first");
                                 assert_eq!(call_id, first_id);
@@ -917,7 +920,8 @@ int main() {
                 match code_block.as_slice() {
                     [
                         CLanguageObject::CallExpression(CallExpression {
-                            id: _, // TODO verify id with id assigned to stdlib function
+                            id: _,
+                            id_declaration: _, // TODO verify id with id assigned to stdlib function
                             identifier: call_identifier,
                             argument_list,
                         }),
@@ -1363,11 +1367,11 @@ int main() {
                         }),
                     ] => match return_value.as_ref() {
                         CLanguageObject::CallExpression(CallExpression {
-                            id: call_id,
+                            id_declaration,
                             identifier: call_identifier,
                             ..
                         }) => {
-                            assert_eq!(call_id, definition_id);
+                            assert_eq!(id_declaration, definition_id);
                             assert_eq!(call_identifier, "test");
                         }
                         _ => panic!("AST did not match expected return statement"),
@@ -1419,8 +1423,8 @@ int main() {
                         assert_eq!(variable_identifier, "test");
                         assert_ne!(variable_id, function_id);
                         match return_value.as_ref() {
-                            CLanguageObject::Reference(Reference { id, identifier }) => {
-                                assert_eq!(id, variable_id);
+                            CLanguageObject::Reference(Reference { declaration_id, identifier, .. }) => {
+                                assert_eq!(declaration_id, variable_id);
                                 assert_eq!(identifier, "test");
                             }
                             _ => panic!("AST did not match expected return statement value"),
