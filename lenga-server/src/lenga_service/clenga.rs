@@ -4,6 +4,7 @@ use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
 pub mod node_parser;
+pub mod proto_parser;
 
 pub mod proto {
     tonic::include_proto!("c.lenga");
