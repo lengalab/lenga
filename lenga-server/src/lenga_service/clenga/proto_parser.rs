@@ -373,3 +373,593 @@ fn compound_statement_to_c_object(
         code_block: code_block,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::lenga_service::clenga::proto;
+    use uuid::Uuid;
+    use language::language::c;
+    
+    #[test]
+    fn test_01_source_file() {
+        let comment_id = Uuid::new_v4();
+        let content = "test";
+        let comment: proto::LanguageObject = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Comment(proto::Comment {
+                    id: comment_id.to_string(),
+                    content: content.to_string(),
+                })
+            ),
+        };
+
+        let id = Uuid::new_v4();
+        let src = proto::SourceFile {
+            id: id.to_string(),
+            code: vec![comment],
+        };
+        let c_src = source_file_to_c_object(src).unwrap();
+
+        assert_eq!(c_src.id, id);
+        match &c_src.code[0] {
+            c::language_object::LanguageObject::Comment(c_comment) => {
+                assert_eq!(c_comment.id, comment_id);
+                assert_eq!(c_comment.content, content);
+            }
+            _ => panic!("expected Comment"),
+        }
+    }
+
+    #[test]
+    fn test_02_assignment_expression() {
+        let number_id = Uuid::new_v4();
+        let number_value = "42";
+        let number = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::NumberLiteral(proto::NumberLiteral {
+                    id: number_id.to_string(),
+                    value: number_value.to_string(),
+                })
+            ),
+        };
+
+        let id = Uuid::new_v4();
+        let identifier = "test";
+        let assignment = proto::AssignmentExpression {
+            id: id.to_string(),
+            identifier: identifier.to_string(),
+            value: Some(Box::new(number)),
+        };
+        let c_assign = assignment_expression_to_c_object(assignment).unwrap();
+
+        assert_eq!(c_assign.id, id);
+        assert_eq!(c_assign.identifier, identifier);
+        match *c_assign.value {
+            c::language_object::LanguageObject::NumberLiteral(ref c_num) => {
+                assert_eq!(c_num.id, number_id);
+                assert_eq!(c_num.value, number_value);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_03_binary_expression() {
+        let left_id = Uuid::new_v4();
+        let left_value = "1";
+        let left: proto::LanguageObject = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::NumberLiteral(proto::NumberLiteral {
+                    id: left_id.to_string(),
+                    value: left_value.to_string(),
+                })
+            ),
+        };
+
+        let right_id = Uuid::new_v4();
+        let right_value = "2";
+        let right: proto::LanguageObject = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::NumberLiteral(proto::NumberLiteral {
+                    id: right_id.to_string(),
+                    value: right_value.to_string(),
+                })
+            ),
+        };
+
+        let id = Uuid::new_v4();
+        let operator = "+";
+        let binary = proto::BinaryExpression {
+            id: id.to_string(),
+            operator: operator.to_string(),
+            left: Some(Box::new(left)),
+            right: Some(Box::new(right)),
+        };
+        let c_bin = binary_expression_to_c_object(binary).unwrap();
+
+        assert_eq!(c_bin.id, id);
+        assert_eq!(c_bin.operator, operator);
+
+        match *c_bin.left {
+            c::language_object::LanguageObject::NumberLiteral(ref c_num) => {
+                assert_eq!(c_num.id, left_id);
+                assert_eq!(c_num.value, left_value);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+
+        match *c_bin.right {
+            c::language_object::LanguageObject::NumberLiteral(ref c_num) => {
+                assert_eq!(c_num.id, right_id);
+                assert_eq!(c_num.value, right_value);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_04_call_expression() {
+        let arg_id = Uuid::new_v4();
+        let declaration_id = Uuid::new_v4();
+        let arg_identifier = "bar";
+        let arg = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Reference(proto::Reference { 
+                    id: arg_id.to_string(), 
+                    declaration_id: declaration_id.to_string(), 
+                    identifier: arg_identifier.to_string()
+                })
+            )
+        };
+
+        let id = Uuid::new_v4();
+        let id_declaration = Uuid::new_v4();
+        let identifier = "foo";
+        let call = proto::CallExpression {
+            id: id.to_string(),
+            id_declaration: id_declaration.to_string(),
+            identifier: identifier.to_string(),
+            argument_list: vec![arg],
+        };
+        let c_call = call_expression_to_c_object(call).unwrap();
+
+        assert_eq!(c_call.id, id);
+        assert_eq!(c_call.identifier, identifier);
+        assert_eq!(c_call.id_declaration, id_declaration);
+
+        match &c_call.argument_list[0] {
+            c::language_object::LanguageObject::Reference(c_ref) => {
+                assert_eq!(c_ref.id, arg_id);
+                assert_eq!(c_ref.declaration_id, declaration_id);
+                assert_eq!(c_ref.identifier, arg_identifier);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_05_comment() {
+        let id = Uuid::new_v4();
+        let content = "test";
+        let proto_comment = proto::Comment { id: id.to_string(), content: content.to_string() };
+        let c_comment = comment_to_c_object(proto_comment).unwrap();
+
+        assert_eq!(c_comment.id, id);
+        assert_eq!(c_comment.content, content);
+    }
+
+    #[test]
+    fn test_06_declaration() {
+        let number_id = Uuid::new_v4();
+        let number_value = "42";
+        let number = proto::NumberLiteral {
+            id: number_id.to_string(),
+            value: number_value.to_string(),
+        };
+
+        let id = Uuid::new_v4();
+        let primitive_type = c::object_types::c_type::CType::Int;
+        let identifier = "test";
+        let decl = proto::Declaration { 
+            id: id.to_string(), 
+            primitive_type: primitive_type.as_str().to_string(),
+            identifier: identifier.to_string() ,
+            value: Some(Box::new(proto::LanguageObject {
+                language_object: Some(proto::language_object::LanguageObject::NumberLiteral(number)),
+            }))
+        };
+        let c_decl = declaration_to_c_object(decl).unwrap();
+
+        assert_eq!(c_decl.id, id);
+        assert_eq!(c_decl.primitive_type, primitive_type);
+
+        if let Some(inner) = &c_decl.value {
+            match inner.as_ref() {
+                c::language_object::LanguageObject::NumberLiteral(number) => {
+                    assert_eq!(number.id, number_id);
+                    assert_eq!(number.value, number_value);
+                },
+                _ => panic!("expected NumberLiteral"),
+            }
+        } else {
+            panic!("expected Some(Box<NumberLiteral>)");
+        }
+    }
+
+    #[test]
+    fn test_07_else_clause() {
+        let comment_id = Uuid::new_v4();
+        let content = "test";
+        let comment = proto::Comment {
+            id: comment_id.to_string(),
+            content: content.to_string(),
+        };
+
+        let stmt_id = Uuid::new_v4();
+        let stmt_comment = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Comment(comment)
+            ),
+        };
+        let comp_stmt = proto::CompoundStatement {
+            id: stmt_id.to_string(),
+            code_block: vec![stmt_comment],
+        };
+
+        let id = Uuid::new_v4();
+        let else_clause = proto::ElseClause {
+            id: id.to_string(),
+            condition: None,
+            compound_statement: Some(comp_stmt),
+        };
+        let c_else = else_clause_to_c_object(else_clause).unwrap();
+
+        assert_eq!(c_else.id, id);
+        assert!(c_else.condition.is_none());
+        assert_eq!(c_else.compound_statement.id, stmt_id);
+        match &c_else.compound_statement.code_block[0] {
+            c::language_object::LanguageObject::Comment(c_comment) => {
+                assert_eq!(c_comment.id, comment_id);
+                assert_eq!(c_comment.content, content);
+            }
+            _ => panic!("expected Comment"),
+        }
+    }
+
+    #[test]
+    fn test_08_expression_statement() {
+        let expr_id = Uuid::new_v4();
+        let expr_val = "42";
+        let expr = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::NumberLiteral(proto::NumberLiteral {
+                    id: expr_id.to_string(),
+                    value: expr_val.to_string(),
+                })
+            ),
+        };
+
+        let id = Uuid::new_v4();
+        let identifier = "expr";
+        let stmt = proto::ExpressionStatement {
+            id: id.to_string(),
+            identifier: identifier.to_string(),
+            argument_list: vec![expr],
+        };
+        let c_stmt = expression_statement_to_c_object(stmt).unwrap();
+
+        assert_eq!(c_stmt.id, id);
+        match c_stmt.argument_list[0] {
+            c::language_object::LanguageObject::NumberLiteral(ref c_num) => {
+                assert_eq!(c_num.id, expr_id);
+                assert_eq!(c_num.value, expr_val);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_09_function_declaration() {
+        let param_id = Uuid::new_v4();
+        let param_type = c::object_types::c_type::CType::Int;
+        let param_identifier = "test";
+        let param = proto::FunctionParameter {
+            id: param_id.to_string(),
+            param_type: param_type.as_str().to_string(),
+            identifier: param_identifier.to_string(),
+        };
+
+        let id = Uuid::new_v4();
+        let return_type = c::object_types::c_type::CType::Int;
+        let identifier = "foo";
+        let decl = proto::FunctionDeclaration {
+            id: id.to_string(),
+            return_type: return_type.as_str().to_string(),
+            identifier: identifier.to_string(),
+            parameter_list: vec![param],
+        };
+        let c_decl = function_declaration_to_c_object(decl).unwrap();
+
+        assert_eq!(c_decl.id, id);
+        assert_eq!(c_decl.return_type, return_type);
+        assert_eq!(c_decl.identifier, identifier);
+        assert_eq!(c_decl.parameter_list[0].id, param_id);
+        assert_eq!(c_decl.parameter_list[0].param_type, param_type);
+        assert_eq!(c_decl.parameter_list[0].identifier, param_identifier);
+    }
+
+    #[test]
+    fn test_10_function_definition() {
+        let body_id = Uuid::new_v4();
+        let comment_id = Uuid::new_v4();
+        let content = "test";
+        let comment = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Comment(proto::Comment {
+                    id: comment_id.to_string(),
+                    content: content.to_string(),
+                })
+            ),
+        };
+        let compound = proto::CompoundStatement {
+            id: body_id.to_string(),
+            code_block: vec![comment],
+        };
+
+        let param_id = Uuid::new_v4();
+        let param_type = c::object_types::c_type::CType::Int;
+        let param_identifier = "test";
+        let param = proto::FunctionParameter {
+            id: param_id.to_string(),
+            param_type: param_type.as_str().to_string(),
+            identifier: param_identifier.to_string(),
+        };
+
+        let id = Uuid::new_v4();
+        let return_type = c::object_types::c_type::CType::Int;
+        let identifier = "foo";
+        let def = proto::FunctionDefinition {
+            id: id.to_string(),
+            return_type: return_type.as_str().to_string(),
+            identifier: identifier.to_string(),
+            parameter_list: vec![param],
+            compound_statement: Some(compound),
+        };
+        let c_def = function_definition_to_c_object(def).unwrap();
+
+        assert_eq!(c_def.id, id);
+        assert_eq!(c_def.return_type, return_type);
+        assert_eq!(c_def.identifier, identifier);
+        assert_eq!(c_def.compound_statement.id, body_id);
+        match &c_def.compound_statement.code_block[0] {
+            c::language_object::LanguageObject::Comment(c_comment) => {
+                assert_eq!(c_comment.id, comment_id);
+                assert_eq!(c_comment.content, content);
+            }
+            _ => panic!("expected Comment"),
+        }
+    }
+
+    #[test]
+    fn test_11_function_parameter() {
+        let id = Uuid::new_v4();
+        let param_type = c::object_types::c_type::CType::Int;
+        let identifier = "bar";
+        let param = proto::FunctionParameter {
+            id: id.to_string(),
+            param_type: param_type.as_str().to_string(),
+            identifier: identifier.to_string(),
+        };
+        let c_param = function_parameter_to_c_object(param).unwrap();
+
+        assert_eq!(c_param.id, id);
+        assert_eq!(c_param.param_type, param_type);
+        assert_eq!(c_param.identifier, identifier);
+    }
+
+    #[test]
+    fn test_12_if_statement() {
+        let cond_id = Uuid::new_v4();
+        let cond_val = "1";
+        let condition = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::NumberLiteral(proto::NumberLiteral {
+                    id: cond_id.to_string(),
+                    value: cond_val.to_string(),
+                })
+            ),
+        };
+
+        let then_id = Uuid::new_v4();
+        let then_comment_id = Uuid::new_v4();
+        let then_comment_content = "then branch";
+        let then_comment = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Comment(proto::Comment {
+                    id: then_comment_id.to_string(),
+                    content: then_comment_content.to_string(),
+                })
+            ),
+        };
+        let then_stmt = proto::CompoundStatement {
+            id: then_id.to_string(),
+            code_block: vec![then_comment],
+        };
+
+        let else_id = Uuid::new_v4();
+        let else_comment_id = Uuid::new_v4();
+        let else_comment_content = "else branch";
+        let else_comment = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Comment(proto::Comment {
+                    id: else_comment_id.to_string(),
+                    content: else_comment_content.to_string(),
+                })
+            ),
+        };
+        let else_compound = proto::CompoundStatement {
+            id: else_id.to_string(),
+            code_block: vec![else_comment],
+        };
+        let else_clause = proto::ElseClause {
+            id: Uuid::new_v4().to_string(),
+            condition: None,
+            compound_statement: Some(else_compound),
+        };
+
+        let id = Uuid::new_v4();
+        let if_stmt = proto::IfStatement {
+            id: id.to_string(),
+            condition: Some(Box::new(condition)),
+            compound_statement: Some(then_stmt),
+            else_clause: Some(Box::new(else_clause)),
+        };
+        let c_if = if_statement_to_c_object(if_stmt).unwrap();
+
+        assert_eq!(c_if.id, id);
+        match *c_if.condition {
+            c::language_object::LanguageObject::NumberLiteral(ref c_num) => {
+                assert_eq!(c_num.id, cond_id);
+                assert_eq!(c_num.value, cond_val);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+        assert_eq!(c_if.compound_statement.id, then_id);
+        match &c_if.compound_statement.code_block[0] {
+            c::language_object::LanguageObject::Comment(c_comment) => {
+                assert_eq!(c_comment.id, then_comment_id);
+                assert_eq!(c_comment.content, then_comment_content);
+            }
+            _ => panic!("expected Comment"),
+        }
+        let else_clause = c_if.else_clause.unwrap();
+        assert_eq!(else_clause.compound_statement.id, else_id);
+        match &else_clause.compound_statement.code_block[0] {
+            c::language_object::LanguageObject::Comment(c_comment) => {
+                assert_eq!(c_comment.id, else_comment_id);
+                assert_eq!(c_comment.content, else_comment_content);
+            }
+            _ => panic!("expected Comment"),
+        }
+    }
+
+    #[test]
+    fn test_13_number_literal() {
+        let id = Uuid::new_v4();
+        let value = "123";
+        let num = proto::NumberLiteral {
+            id: id.to_string(),
+            value: value.to_string(),
+        };
+        let c_num = number_literal_to_c_object(num).unwrap();
+
+        assert_eq!(c_num.id, id);
+        assert_eq!(c_num.value, value);
+    }
+
+    #[test]
+    fn test_14_preproc_include() {
+        let id = Uuid::new_v4();
+        let directive = "stdio.h";
+        let incl = proto::PreprocInclude {
+            id: id.to_string(),
+            content: directive.to_string(),
+        };
+        let c_incl = preproc_include_to_c_object(incl).unwrap();
+
+        assert_eq!(c_incl.id, id);
+        assert_eq!(c_incl.content, directive);
+    }
+
+    #[test]
+    fn test_15_reference() {
+        let id = Uuid::new_v4();
+        let decl_id = Uuid::new_v4();
+        let identifier = "foo";
+        let proto_ref = proto::Reference {
+            id: id.to_string(),
+            declaration_id: decl_id.to_string(),
+            identifier: identifier.to_string(),
+        };
+        let c_ref = reference_to_c_object(proto_ref).unwrap();
+
+        assert_eq!(c_ref.id, id);
+        assert_eq!(c_ref.declaration_id, decl_id);
+        assert_eq!(c_ref.identifier, identifier);
+    }
+
+    #[test]
+    fn test_16_return_statement() {
+        let num_id = Uuid::new_v4();
+        let val = "7";
+        let ret_expr = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::NumberLiteral(proto::NumberLiteral {
+                    id: num_id.to_string(),
+                    value: val.to_string(),
+                })
+            ),
+        };
+
+        let id = Uuid::new_v4();
+        let proto_ret = proto::ReturnStatement {
+            id: id.to_string(),
+            value: Some(Box::new(ret_expr)),
+        };
+        let c_ret = return_statement_to_c_object(proto_ret).unwrap();
+
+        assert_eq!(c_ret.id, id);
+        match *c_ret.value {
+            c::language_object::LanguageObject::NumberLiteral(ref c_num) => {
+                assert_eq!(c_num.id, num_id);
+                assert_eq!(c_num.value, val);
+            }
+            _ => panic!("expected NumberLiteral"),
+        }
+    }
+
+    #[test]
+    fn test_17_string_literal() {
+        let id = Uuid::new_v4();
+        let val = "hello";
+        let proto_str = proto::StringLiteral {
+            id: id.to_string(),
+            value: val.to_string(),
+        };
+        let c_str = string_literal_to_c_object(proto_str).unwrap();
+
+        assert_eq!(c_str.id, id);
+        assert_eq!(c_str.value, val);
+    }
+
+    #[test]
+    fn test_18_compound_statement() {
+        let comment_id = Uuid::new_v4();
+        let content = "test";
+        let comment = proto::LanguageObject {
+            language_object: Some(
+                proto::language_object::LanguageObject::Comment(proto::Comment {
+                    id: comment_id.to_string(),
+                    content: content.to_string(),
+                })
+            ),
+        };
+
+        let id = Uuid::new_v4();
+        let comp = proto::CompoundStatement {
+            id: id.to_string(),
+            code_block: vec![comment],
+        };
+        let c_comp = compound_statement_to_c_object(comp).unwrap();
+
+        assert_eq!(c_comp.id, id);
+        match &c_comp.code_block[0] {
+            c::language_object::LanguageObject::Comment(c_comment) => {
+                assert_eq!(c_comment.id, comment_id);
+                assert_eq!(c_comment.content, content);
+            }
+            _ => panic!("expected Comment"),
+        }
+    }
+}
