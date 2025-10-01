@@ -22,6 +22,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 use std::{any::Any, fmt::Debug};
+use uuid::Uuid;
 
 use assignment_expression::AssignmentExpression;
 use binary_expression::BinaryExpression;
@@ -92,6 +93,29 @@ impl LanguageObject {
             LanguageObject::ReturnStatement(return_statement) => return_statement.write(w),
             LanguageObject::StringLiteral(string_literal) => string_literal.write(w),
             LanguageObject::CompoundStatement(compound_statement) => compound_statement.write(w),
+        }
+    }
+
+    pub fn id(&self) -> Uuid {
+        match self {
+            LanguageObject::SourceFile(src_file) => src_file.id,
+            LanguageObject::AssignmentExpression(assignment_expression) =>assignment_expression.id,
+            LanguageObject::BinaryExpression(binary_expression) => binary_expression.id,
+            LanguageObject::CallExpression(call_expression) => call_expression.id,
+            LanguageObject::Comment(comment) => comment.id,
+            LanguageObject::Declaration(declaration) => declaration.id,
+            LanguageObject::ElseClause(else_clause) => else_clause.id,
+            LanguageObject::ExpressionStatement(expression_statement) => expression_statement.id,
+            LanguageObject::FunctionDeclaration(function_declaration) => function_declaration.id,
+            LanguageObject::FunctionDefinition(function_definition) => function_definition.id,
+            LanguageObject::FunctionParameter(function_parameter) => function_parameter.id,
+            LanguageObject::IfStatement(if_statement) => if_statement.id,
+            LanguageObject::NumberLiteral(number_literal) => number_literal.id,
+            LanguageObject::PreprocInclude(preproc_include) => preproc_include.id,
+            LanguageObject::Reference(reference) => reference.id,
+            LanguageObject::ReturnStatement(return_statement) => return_statement.id,
+            LanguageObject::StringLiteral(string_literal) => string_literal.id,
+            LanguageObject::CompoundStatement(compound_statement) => compound_statement.id,
         }
     }
 }
