@@ -505,9 +505,10 @@ int main() {
                             value: None,
                         }),
                         CLanguageObject::AssignmentExpression(AssignmentExpression {
-                            id: assignment_id,
+                            id_declaration: assignment_id,
                             identifier: a_assignment_identifier,
                             value: a_assignment_value,
+                            ..
                         }),
                     ] => {
                         assert_eq!(a_identifier, "a");
@@ -652,9 +653,10 @@ int main() {
                         match inner_scope.as_slice() {
                             [
                                 CLanguageObject::AssignmentExpression(AssignmentExpression {
-                                    id: b_assignment_id,
+                                    id_declaration: b_assignment_id,
                                     identifier: b_assignment_identifier,
                                     value: b_assignment_value,
+                                    ..
                                 }),
                                 CLanguageObject::Declaration(Declaration {
                                     id: inner_a_declaration_id,
@@ -663,9 +665,10 @@ int main() {
                                     value: Some(inner_a_declaration_value),
                                 }),
                                 CLanguageObject::AssignmentExpression(AssignmentExpression {
-                                    id: c_assignment_id,
+                                    id_declaration: c_assignment_id,
                                     identifier: c_assignment_identifier,
                                     value: c_assignment_value,
+                                    ..
                                 }),
                             ] => {
                                 assert_eq!(b_assignment_identifier, "b");

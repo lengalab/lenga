@@ -104,7 +104,7 @@ impl<'a> Cursor for NodeCursor<'a> {
         self.nodes.push(Node {
             id: assignment_expression.id,
             node_type: NodeType::AssignmentExpression.as_u64(),
-            content: assignment_expression.identifier.clone(),
+            content: assignment_expression.id_declaration.to_string(),
             tags: HashMap::new(),
             children: self.to_node(&assignment_expression.value)?,
         });

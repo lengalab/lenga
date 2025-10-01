@@ -144,9 +144,12 @@ impl<'a> NodeParser<'a> {
         node: Node,
     ) -> Result<AssignmentExpression, NodeParserError> {
         assert_eq!(node.node_type, NodeType::AssignmentExpression.as_u64());
+        let id_declaration = Uuid::parse_str(&node.content).unwrap();
+        let identifier = self.context.get_symbol_identifier(&id_declaration).unwrap();
         Ok(AssignmentExpression {
             id: node.id,
-            identifier: node.content,
+            id_declaration,
+            identifier,
             value: self.unpack_parse(node.children)?,
         })
     }

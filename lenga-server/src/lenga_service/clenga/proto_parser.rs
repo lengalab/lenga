@@ -108,6 +108,8 @@ fn assignment_expression_to_c_object(
 ) -> Result<c::language_object::assignment_expression::AssignmentExpression, String> {
     let id = Uuid::parse_str(&assignment_expression.id).map_err(|_| "object id could not be parsed".to_string())?;
 
+    let id_declaration = Uuid::parse_str(&assignment_expression.id_declaration).map_err(|_| "assignment expression with unparsable id_declaration attribute")?;
+
     let proto_value = assignment_expression.value.ok_or("assignment expression with inexistent value attribute".to_string())?;
 
     let value_c_object = Box::new(
@@ -116,6 +118,7 @@ fn assignment_expression_to_c_object(
 
     Ok(c::language_object::assignment_expression::AssignmentExpression {
         id,
+        id_declaration,
         identifier: assignment_expression.identifier,
         value: value_c_object,
     })
@@ -425,15 +428,18 @@ mod tests {
         };
 
         let id = Uuid::new_v4();
+        let id_declaration = Uuid::new_v4();
         let identifier = "test";
         let assignment = proto::AssignmentExpression {
             id: id.to_string(),
+            id_declaration: id_declaration.to_string(),
             identifier: identifier.to_string(),
             value: Some(Box::new(number)),
         };
         let c_assign = assignment_expression_to_c_object(assignment).unwrap();
 
         assert_eq!(c_assign.id, id);
+        assert_eq!(c_assign.id_declaration, id_declaration);
         assert_eq!(c_assign.identifier, identifier);
         match *c_assign.value {
             c::language_object::LanguageObject::NumberLiteral(ref c_num) => {

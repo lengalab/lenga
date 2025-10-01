@@ -189,6 +189,7 @@ fn assignment_expression_to_proto(
 
     proto::AssignmentExpression {
         id: assignment_expression.id.to_string(),
+        id_declaration: assignment_expression.id_declaration.to_string(),
         identifier: assignment_expression.identifier,
         value: value_proto,
     }
@@ -445,9 +446,11 @@ mod tests {
         let value = "42";
         
         let id = Uuid::new_v4();
+        let id_declaration = Uuid::new_v4();
         let identifier = "test";
         let assignment = c::language_object::assignment_expression::AssignmentExpression {
             id,
+            id_declaration,
             identifier: identifier.to_string(),
             value: Box::new(c::language_object::LanguageObject::NumberLiteral(
                 c::language_object::number_literal::NumberLiteral { id: number_id, value: value.to_string() },

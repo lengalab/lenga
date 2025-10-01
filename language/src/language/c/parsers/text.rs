@@ -507,9 +507,10 @@ impl<'a> TreeSitterParser<'a> {
             .branch()
             .object_from_tree_sitter_node(node.child(2).unwrap(), source_code)
             .unwrap();
-        let id = self.context.get_or_insert_symbol(&identifier, false);
+        let id_declaration = self.context.get_or_insert_symbol(&identifier, false);
         AssignmentExpression {
-            id,
+            id: Uuid::new_v4(),
+            id_declaration,
             identifier,
             value: Box::new(value),
         }
