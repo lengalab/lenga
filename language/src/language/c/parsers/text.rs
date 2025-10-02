@@ -1,4 +1,3 @@
-use bimap::{BiHashMap, Overwritten};
 use uuid::Uuid;
 
 use crate::language::c::{
@@ -102,6 +101,7 @@ impl<'a> TreeSitterParser<'a> {
             current_node = current_node.next_sibling().unwrap();
         }
         Ok(CompoundStatement {
+            id: Uuid::new_v4(),
             code_block: branch.objects,
         })
     }
@@ -127,7 +127,7 @@ impl<'a> TreeSitterParser<'a> {
             ),
             "number_literal" => {
                 let value = node.content(source_code);
-                CLanguageObject::NumberLiteral(NumberLiteral { value })
+                CLanguageObject::NumberLiteral(NumberLiteral { id: Uuid::new_v4(), value })
             }
             "string_literal" => CLanguageObject::StringLiteral(
                 self.string_literal_from_tree_sitter_node(node, source_code)?,
@@ -230,6 +230,7 @@ impl<'a> TreeSitterParser<'a> {
         let lib = node.child(1).unwrap();
         assert_eq!(lib.kind(), "system_lib_string");
         Ok(PreprocInclude {
+            id: Uuid::new_v4(),
             content: lib.content(source_code),
         })
     }
@@ -242,6 +243,7 @@ impl<'a> TreeSitterParser<'a> {
         let value = node.content(source_code);
         if let Some(value) = value.strip_prefix('"') {
             return Ok(StringLiteral {
+                id: Uuid::new_v4(),
                 value: value.strip_suffix('"').unwrap().to_string(),
             });
         }
@@ -258,6 +260,7 @@ impl<'a> TreeSitterParser<'a> {
             .object_from_tree_sitter_node(node.child(1).unwrap(), source_code)
             .unwrap();
         Ok(ReturnStatement {
+            id: Uuid::new_v4(),
             value: Box::new(value),
         })
     }
@@ -269,11 +272,11 @@ impl<'a> TreeSitterParser<'a> {
     ) -> Result<Reference, TreeSitterParserError> {
         assert_eq!(node.kind(), "identifier");
         let identifier = node.content(source_code).to_string();
-        let id = self
+        let declaration_id = self
             .context
             .get_symbol_id(&identifier, false)
             .ok_or(TreeSitterParserError::MissingSymbol(identifier.to_string()))?;
-        Ok(Reference { id, identifier })
+        Ok(Reference { id: Uuid::new_v4(), declaration_id, identifier })
     }
 
     pub fn number_literal_from_tree_sitter_node(
@@ -282,7 +285,10 @@ impl<'a> TreeSitterParser<'a> {
         source_code: &str,
     ) -> NumberLiteral {
         let value = node.content(source_code);
-        NumberLiteral { value }
+        NumberLiteral { 
+            id: Uuid::new_v4(),
+            value,
+        }
     }
 
     fn if_statement_from_tree_sitter_node(
@@ -315,6 +321,7 @@ impl<'a> TreeSitterParser<'a> {
         };
 
         Ok(IfStatement {
+            id: Uuid::new_v4(),
             condition: Box::new(condition),
             compound_statement: code_block,
             else_clause,
@@ -396,6 +403,7 @@ impl<'a> TreeSitterParser<'a> {
                 )?;
 
                 Ok(ElseClause {
+                    id: Uuid::new_v4(),
                     condition: None,
                     compound_statement: code_block,
                 })
@@ -405,6 +413,7 @@ impl<'a> TreeSitterParser<'a> {
                     self.if_statement_from_tree_sitter_node(compound_statement, source_code)?;
 
                 Ok(ElseClause {
+                    id: Uuid::new_v4(),
                     condition: Some(if_statement.condition),
                     compound_statement: if_statement.compound_statement,
                 })
@@ -419,7 +428,10 @@ impl<'a> TreeSitterParser<'a> {
         source_code: &str,
     ) -> Comment {
         let content = node.content(source_code);
-        Comment { content }
+        Comment { 
+            id: Uuid::new_v4(),
+            content,
+        }
     }
 
     fn call_expression_from_tree_sitter_node(
@@ -430,7 +442,7 @@ impl<'a> TreeSitterParser<'a> {
         let identifier_node = node.child(0).unwrap();
         assert_eq!(identifier_node.kind(), "identifier");
         let identifier = identifier_node.content(source_code).to_string();
-        let id = self.context.get_or_insert_symbol(&identifier, true); // TODO this symbols should be registered from imported libraries
+        let id_declaration = self.context.get_symbol_id(&identifier, true).unwrap_or(Uuid::nil()); // TODO this symbols should be registered from imported libraries
 
         // TODO check if this works and replace on function_declaration.rs
         let argument_list_node = node.child(1).unwrap();
@@ -455,7 +467,8 @@ impl<'a> TreeSitterParser<'a> {
         }
 
         Ok(CallExpression {
-            id,
+            id: Uuid::new_v4(),
+            id_declaration,
             identifier,
             argument_list,
         })
@@ -476,6 +489,7 @@ impl<'a> TreeSitterParser<'a> {
             .object_from_tree_sitter_node(node.child(2).unwrap(), source_code)
             .unwrap();
         BinaryExpression {
+            id: Uuid::new_v4(),
             left: Box::new(left),
             operator,
             right: Box::new(right),
@@ -493,9 +507,10 @@ impl<'a> TreeSitterParser<'a> {
             .branch()
             .object_from_tree_sitter_node(node.child(2).unwrap(), source_code)
             .unwrap();
-        let id = self.context.get_or_insert_symbol(&identifier, false);
+        let id_declaration = self.context.get_or_insert_symbol(&identifier, false);
         AssignmentExpression {
-            id,
+            id: Uuid::new_v4(),
+            id_declaration,
             identifier,
             value: Box::new(value),
         }

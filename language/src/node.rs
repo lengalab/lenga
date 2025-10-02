@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Error};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::language::c::{C, writers::node_writer::node_type::NodeType};
+use crate::language::c::{writers::node_writer::node_type::NodeType};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]

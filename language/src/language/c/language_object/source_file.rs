@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::language::c::{
     language_object::LanguageObject as CLanguageObject,
     writers::{Cursor, writer_error::WriterError},
@@ -5,6 +7,7 @@ use crate::language::c::{
 
 #[derive(Debug, Clone)]
 pub struct SourceFile {
+    pub id: Uuid,
     pub code: Vec<CLanguageObject>,
 }
 

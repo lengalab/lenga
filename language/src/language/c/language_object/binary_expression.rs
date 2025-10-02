@@ -1,17 +1,13 @@
-use std::any::Any;
+use uuid::Uuid;
 
-use crate::language::{
-    LanguageObject,
-    c::{
-        C, TreeSitterNodeExt,
-        language_object::LanguageObject as CLanguageObject,
-        writers::Writer,
-        writers::{Cursor, writer_error::WriterError},
-    },
+use crate::language::c::{
+    language_object::LanguageObject as CLanguageObject,
+    writers::{Cursor, writer_error::WriterError},
 };
 
 #[derive(Debug, Clone)]
 pub struct BinaryExpression {
+    pub id: Uuid,
     pub left: Box<CLanguageObject>,
     pub operator: String,
     pub right: Box<CLanguageObject>,

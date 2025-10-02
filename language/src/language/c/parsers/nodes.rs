@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::{
     language::c::{
         language_object::{
@@ -131,7 +133,10 @@ impl<'a> NodeParser<'a> {
         for child in node.children {
             code.push(branch.clanguageobject_from_node(child)?)
         }
-        Ok(SourceFile { code })
+        Ok(SourceFile {
+            id: node.id,
+            code,
+        })
     }
 
     fn assignment_expression_from_node(
@@ -139,9 +144,12 @@ impl<'a> NodeParser<'a> {
         node: Node,
     ) -> Result<AssignmentExpression, NodeParserError> {
         assert_eq!(node.node_type, NodeType::AssignmentExpression.as_u64());
+        let id_declaration = Uuid::parse_str(&node.content).unwrap();
+        let identifier = self.context.get_symbol_identifier(&id_declaration).unwrap();
         Ok(AssignmentExpression {
             id: node.id,
-            identifier: node.content,
+            id_declaration,
+            identifier,
             value: self.unpack_parse(node.children)?,
         })
     }
@@ -163,6 +171,7 @@ impl<'a> NodeParser<'a> {
         let left = node.tags.remove("left").unwrap().pop().unwrap();
         let right = node.tags.remove("right").unwrap().pop().unwrap();
         Ok(BinaryExpression {
+            id: node.id,
             left: Box::new(self.clanguageobject_from_node(left)?),
             operator: node.content,
             right: Box::new(self.clanguageobject_from_node(right)?),
@@ -171,12 +180,16 @@ impl<'a> NodeParser<'a> {
 
     fn call_expression_from_node(&mut self, node: Node) -> Result<CallExpression, NodeParserError> {
         assert_eq!(node.node_type, NodeType::CallExpression.as_u64());
+
+        let (id_declaration, identifier) = match Uuid::parse_str(&node.content) {
+            Ok(id_declaration) => (id_declaration, self.context.get_symbol_identifier(&id_declaration).unwrap()),
+            Err(_) => (Uuid::nil(), node.content),
+        };
+            
         Ok(CallExpression {
             id: node.id,
-            identifier: match self.context.get_symbol_identifier(&node.id) {
-                Some(indentifier) => indentifier,
-                None => node.content,
-            },
+            id_declaration,
+            identifier,
             argument_list: node
                 .children
                 .into_iter()
@@ -188,6 +201,7 @@ impl<'a> NodeParser<'a> {
     fn comment_from_node(&mut self, node: Node) -> Result<Comment, NodeParserError> {
         assert_eq!(node.node_type, NodeType::Comment.as_u64());
         Ok(Comment {
+            id: node.id,
             content: node.content,
         })
     }
@@ -214,6 +228,7 @@ impl<'a> NodeParser<'a> {
     fn else_clause_from_node(&mut self, mut node: Node) -> Result<ElseClause, NodeParserError> {
         assert_eq!(node.node_type, NodeType::ElseClause.as_u64());
         Ok(ElseClause {
+            id: node.id,
             condition: node
                 .tags
                 .remove("condition")
@@ -331,6 +346,7 @@ impl<'a> NodeParser<'a> {
     fn if_statement_from_node(&mut self, mut node: Node) -> Result<IfStatement, NodeParserError> {
         assert_eq!(node.node_type, NodeType::IfStatement.as_u64());
         Ok(IfStatement {
+            id: node.id,
             condition: self.unpack_parse(node.tags.remove("condition").unwrap())?,
             compound_statement: self
                 .branch()
@@ -349,6 +365,7 @@ impl<'a> NodeParser<'a> {
     fn number_literal_from_node(&mut self, node: Node) -> Result<NumberLiteral, NodeParserError> {
         assert_eq!(node.node_type, NodeType::NumberLiteral.as_u64());
         Ok(NumberLiteral {
+            id: node.id,
             value: node.content,
         })
     }
@@ -356,15 +373,20 @@ impl<'a> NodeParser<'a> {
     fn preproc_include_from_node(&mut self, node: Node) -> Result<PreprocInclude, NodeParserError> {
         assert_eq!(node.node_type, NodeType::PreprocInclude.as_u64());
         Ok(PreprocInclude {
+            id: node.id,
             content: node.content,
         })
     }
 
     fn reference_from_node(&mut self, node: Node) -> Result<Reference, NodeParserError> {
         assert_eq!(node.node_type, NodeType::Reference.as_u64());
+
+        let declaration_id = Uuid::parse_str(&node.content).unwrap();
+
         Ok(Reference {
             id: node.id,
-            identifier: self.context.get_symbol_identifier(&node.id).unwrap(),
+            declaration_id,
+            identifier: self.context.get_symbol_identifier(&declaration_id).unwrap(),
         })
     }
 
@@ -374,6 +396,7 @@ impl<'a> NodeParser<'a> {
     ) -> Result<ReturnStatement, NodeParserError> {
         assert_eq!(node.node_type, NodeType::ReturnStatement.as_u64());
         Ok(ReturnStatement {
+            id: node.id,
             value: self.unpack_parse(node.children)?,
         })
     }
@@ -381,6 +404,7 @@ impl<'a> NodeParser<'a> {
     fn string_literal_from_node(&mut self, node: Node) -> Result<StringLiteral, NodeParserError> {
         assert_eq!(node.node_type, NodeType::StringLiteral.as_u64());
         Ok(StringLiteral {
+            id: node.id,
             value: node.content,
         })
     }
@@ -396,6 +420,9 @@ impl<'a> NodeParser<'a> {
         for child in node.children {
             code_block.push(branch.clanguageobject_from_node(child)?)
         }
-        Ok(CompoundStatement { code_block })
+        Ok(CompoundStatement { 
+            id: node.id,
+            code_block,
+        })
     }
 }
