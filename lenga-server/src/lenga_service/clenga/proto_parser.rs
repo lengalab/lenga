@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::lenga_service::clenga::proto;
 
-fn proto_to_c_language_object(
+pub fn proto_to_c_language_object(
     proto_msg: proto::LanguageObject,
 ) -> Result<c::language_object::LanguageObject, String> {
     let c_object = match proto_msg.language_object {

@@ -1,6 +1,6 @@
 use language::language::c::language_object::{self, LanguageObject};
 
-fn replace_node(
+pub fn replace_node(
     node: &mut LanguageObject,
     new_node: LanguageObject,
 ) -> Option<LanguageObject> {
@@ -26,7 +26,7 @@ fn replace_node(
     }
 }
 
-fn replace_source_file(
+pub fn replace_source_file(
     file: &mut language_object::source_file::SourceFile,
     new_node: LanguageObject,
 ) -> Option<LanguageObject> {

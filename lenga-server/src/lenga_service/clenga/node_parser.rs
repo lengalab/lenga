@@ -16,7 +16,7 @@ pub fn parse_file(
     source_file_to_proto(src_file)
 }
 
-fn c_language_object_to_proto(
+pub fn c_language_object_to_proto(
     c_object: c::language_object::LanguageObject,
 ) -> proto::LanguageObject {
     match c_object {
@@ -166,7 +166,7 @@ fn c_language_object_to_proto(
     }
 }
 
-fn source_file_to_proto(
+pub fn source_file_to_proto(
     src_file: c::language_object::source_file::SourceFile,
 ) -> proto::SourceFile {
     let mut code: Vec<proto::LanguageObject> = Vec::new();
