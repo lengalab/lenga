@@ -204,11 +204,13 @@ impl<'a> Cursor for TextWriter<'a> {
     }
 
     fn write_else_clause(&mut self, else_clause: &ElseClause) -> Result<(), WriterError> {
+        self.write(" else")?;
         if let Some(condition) = &else_clause.condition {
             self.open_block(Delimitator::Paren)?;
             condition.write(self)?;
             self.close_block()?;
         }
+        self.write(" ")?;
         self.write_compound_statement(&else_clause.compound_statement)?;
         Ok(())
     }
@@ -298,9 +300,13 @@ impl<'a> Cursor for TextWriter<'a> {
     }
 
     fn write_if_statement(&mut self, if_statement: &IfStatement) -> Result<(), WriterError> {
+        self.write("if ")?;
+        
         self.open_block(Delimitator::Paren)?;
         if_statement.condition.write(self)?;
         self.close_block()?;
+
+        self.write(&format!(" "))?;
 
         self.write_compound_statement(&if_statement.compound_statement)?;
         if let Some(else_clause) = &if_statement.else_clause {
