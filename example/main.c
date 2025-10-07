@@ -20,7 +20,13 @@ main()
         int a = b + c;
         printf("inner a: %d\n", a);
     }
-    int result = first(a, b, c);
-    printf("result: %d\n", result);
+    if (a < b) {
+        int result = first(a, b, c);
+        printf("result: %d", result);
+    } else {
+        int result = first(b, c, a);
+        printf("result: %d", result);
+    }
+
 }
 
