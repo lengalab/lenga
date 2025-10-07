@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use tokio::fs;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 use std::{fs::File, io::Read};
 use language::language::{c::{ self, C}, Language};
 use std::io::Write;
+use std::path::Path;
 
 pub mod node_parser;
 pub mod proto_parser;
@@ -110,18 +112,24 @@ impl CLenga for CLengaService {
         request: Request<SaveRequest>,
     ) -> Result<Response<Void>, Status> {
         let req = request.into_inner();
+        
+        let file_ast = {
+            let files = self.files.lock().unwrap();
+            files.get(&req.path).cloned()
+        }.ok_or_else(|| Status::not_found(format!("File not found: {}", req.path)))?;
 
-        let files = self.files.lock().unwrap();
-        match files.get(&req.path) {
-            Some(file_ast) => {
-                let c = C::new();
-                let output = c.write_to_nodes(file_ast.clone()).unwrap(); //TODO: handle unwrap
+        let c = C::new();
+        let output = c.write_to_nodes(file_ast).unwrap(); //TODO: handle unwrap
 
-                let mut output_file = File::create(req.write_path).unwrap(); //TODO: handle unwrap
-                output_file.write_all(&output).unwrap(); //TODO: handle unwrap
-            },
-            None => panic!(), //TODO: Send a error status code if the file is not found
-        };
+        let path = Path::new(&req.write_path);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)
+                .await
+                .map_err(|e| Status::internal(format!("Failed to create directories: {}", e)))?;
+        }
+
+        let mut output_file = File::create(req.write_path).unwrap(); //TODO: handle unwrap
+        output_file.write_all(&output).unwrap(); //TODO: handle unwrap
 
         Ok(Response::new(proto::Void {}))
     }
