@@ -57,16 +57,16 @@ impl CLenga for CLengaService {
     ) -> Result<Response<SourceFile>, Status> {
         let req = request.into_inner();
 
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
         let file = match files.get(&req.path) {
             Some(file_ast) => {
                 file_ast.clone()
             },
             None => {
-                let file = File::open(&req.path).unwrap();
-                let content: Vec<u8> = file.bytes().map(|b| b.unwrap()).collect();
+                let file = File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
+                let content: Vec<u8> = file.bytes().map(|b| b.unwrap()).collect(); //TODO: recover or abort
                 let c = C::new();
-                let src_file = c.parse_nodes(content).unwrap();
+                let src_file = c.parse_nodes(content).map_err(|err| Status::internal(err))?;
 
                 files.insert(req.path, src_file.clone());
 
@@ -84,26 +84,28 @@ impl CLenga for CLengaService {
         request: Request<EditRequest>,
     ) -> Result<Response<EditResponse>, Status> {
         let req = request.into_inner();
-        let edited_node = proto_to_c_language_object(req.edited_object.unwrap()).unwrap();
+        let edited_object = req.edited_object.ok_or(Status::invalid_argument("Inexistent edited_object field"))?;
+        let edited_node = proto_to_c_language_object(edited_object).map_err(|err| Status::invalid_argument(err))?;
 
-        let mut files = self.files.lock().unwrap();
+        let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
         match files.get_mut(&req.path) {
             Some(file_ast) => {
-                if let Some(replaced) = replace_source_file(file_ast, edited_node){
-                    let ast = source_file_to_proto(file_ast.clone());
-                    let rep = c_language_object_to_proto(replaced);
-                    let res = proto::EditResponse {
-                        new_object: Some(proto::LanguageObject {
-                            language_object: Some(proto::language_object::LanguageObject::SourceFile(ast)),
-                        }),
-                        old_object: Some(rep),
-                    };                    
-                    Ok(Response::new(res))
-                } else {
-                    panic!() //TODO: Return a error status code if the node could not be replaced
-                }
+                let node_id = edited_node.id();
+                let replaced = replace_source_file(file_ast, edited_node)
+                    .ok_or_else(|| Status::failed_precondition(format!("Matching objects with id {} not found", node_id)))?;
+
+                let ast = source_file_to_proto(file_ast.clone());
+                let rep = c_language_object_to_proto(replaced);
+                let res = proto::EditResponse {
+                    new_object: Some(proto::LanguageObject {
+                        language_object: Some(proto::language_object::LanguageObject::SourceFile(ast)),
+                    }),
+                    old_object: Some(rep),
+                };                    
+                Ok(Response::new(res))
+                
             },
-            None => panic!(), //TODO: Send a error status code if the file is not found
+            None => Err(Status::not_found(format!("File not found: {}", req.path)))
         }
     }
 
@@ -114,12 +116,12 @@ impl CLenga for CLengaService {
         let req = request.into_inner();
         
         let file_ast = {
-            let files = self.files.lock().unwrap();
+            let files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
             files.get(&req.path).cloned()
         }.ok_or_else(|| Status::not_found(format!("File not found: {}", req.path)))?;
 
         let c = C::new();
-        let output = c.write_to_nodes(file_ast).unwrap(); //TODO: handle unwrap
+        let output = c.write_to_nodes(file_ast).map_err(|err| Status::data_loss(err))?;
 
         let path = Path::new(&req.write_path);
         if let Some(parent) = path.parent() {
@@ -128,8 +130,8 @@ impl CLenga for CLengaService {
                 .map_err(|e| Status::internal(format!("Failed to create directories: {}", e)))?;
         }
 
-        let mut output_file = File::create(req.write_path).unwrap(); //TODO: handle unwrap
-        output_file.write_all(&output).unwrap(); //TODO: handle unwrap
+        let mut output_file = File::create(req.write_path).map_err(|err| Status::from_error(Box::new(err)))?; 
+        output_file.write_all(&output).map_err(|err| Status::data_loss(err.to_string()))?;
 
         Ok(Response::new(proto::Void {}))
     }
