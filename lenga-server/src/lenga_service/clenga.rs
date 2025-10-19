@@ -1,16 +1,20 @@
+use language::language::{
+    Language,
+    c::{self, C},
+};
 use std::collections::HashMap;
+use std::io::Write;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
+use std::{fs::File, io::Read};
 use tokio::fs;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
-use std::{fs::File, io::Read};
-use language::language::{c::{ self, C}, Language};
-use std::io::Write;
-use std::path::Path;
 
 pub mod node_parser;
-pub mod proto_parser;
+pub mod node_searcher;
 pub mod nodes_replacer;
+pub mod proto_parser;
 
 pub mod proto {
     tonic::include_proto!("c.lenga");
@@ -18,18 +22,21 @@ pub mod proto {
 
 // Service Interface
 use proto::{
-    EditRequest, InitRequest, OpenRequest, SessionId, SourceFile,
-    c_lenga_server::{CLenga, CLengaServer}, Void
+    EditRequest, InitRequest, OpenRequest, SessionId, SourceFile, Void,
+    c_lenga_server::{CLenga, CLengaServer},
 };
 
-use crate::lenga_service::clenga::node_parser::{ source_file_to_proto, c_language_object_to_proto};
-use crate::lenga_service::clenga::proto::{EditResponse, SaveRequest};
-use crate::lenga_service::clenga::proto_parser::proto_to_c_language_object;
-use crate::lenga_service::clenga::nodes_replacer::replace_source_file;
+use crate::lenga_service::clenga::{
+    node_parser::{c_language_object_to_proto, source_file_to_proto},
+    node_searcher::find_node,
+    nodes_replacer::replace_source_file,
+    proto::{AvailableInsertsRequest, EditResponse, InsertOptions, SaveRequest},
+    proto_parser::proto_to_c_language_object,
+};
 
 #[derive(Debug)]
 pub struct CLengaService {
-    files: Arc<Mutex<HashMap<String, c::language_object::source_file::SourceFile>>>,
+    files: Arc<Mutex<HashMap<String, c::language_object::special_object::source_file::SourceFile>>>,
 }
 
 impl Default for CLengaService {
@@ -59,14 +66,15 @@ impl CLenga for CLengaService {
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
         let file = match files.get(&req.path) {
-            Some(file_ast) => {
-                file_ast.clone()
-            },
+            Some(file_ast) => file_ast.clone(),
             None => {
-                let file = File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
+                let file =
+                    File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
                 let content: Vec<u8> = file.bytes().map(|b| b.unwrap()).collect(); //TODO: recover or abort
                 let c = C::new();
-                let src_file = c.parse_nodes(content).map_err(|err| Status::internal(err))?;
+                let src_file = c
+                    .parse_nodes(content)
+                    .map_err(|err| Status::internal(err))?;
 
                 files.insert(req.path, src_file.clone());
 
@@ -79,49 +87,81 @@ impl CLenga for CLengaService {
         Ok(Response::new(ast))
     }
 
-    async fn edit(
-        &self,
-        request: Request<EditRequest>,
-    ) -> Result<Response<EditResponse>, Status> {
+    async fn edit(&self, request: Request<EditRequest>) -> Result<Response<EditResponse>, Status> {
         let req = request.into_inner();
-        let edited_object = req.edited_object.ok_or(Status::invalid_argument("Inexistent edited_object field"))?;
-        let edited_node = proto_to_c_language_object(edited_object).map_err(|err| Status::invalid_argument(err))?;
+        let edited_object = req
+            .edited_object
+            .ok_or(Status::invalid_argument("Inexistent edited_object field"))?;
+        let edited_node = proto_to_c_language_object(edited_object)
+            .map_err(|err| Status::invalid_argument(err))?;
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
         match files.get_mut(&req.path) {
             Some(file_ast) => {
                 let node_id = edited_node.id();
-                let replaced = replace_source_file(file_ast, edited_node)
-                    .ok_or_else(|| Status::failed_precondition(format!("Matching objects with id {} not found", node_id)))?;
+                let replaced = replace_source_file(file_ast, edited_node).ok_or_else(|| {
+                    Status::failed_precondition(format!(
+                        "Matching objects with id {} not found",
+                        node_id
+                    ))
+                })?;
 
                 let ast = source_file_to_proto(file_ast.clone());
                 let rep = c_language_object_to_proto(replaced);
                 let res = proto::EditResponse {
                     new_object: Some(proto::LanguageObject {
-                        language_object: Some(proto::language_object::LanguageObject::SourceFile(ast)),
+                        language_object: Some(proto::language_object::LanguageObject::SourceFile(
+                            ast,
+                        )),
                     }),
                     old_object: Some(rep),
-                };                    
+                };
                 Ok(Response::new(res))
-                
-            },
-            None => Err(Status::not_found(format!("File not found: {}", req.path)))
+            }
+            None => Err(Status::not_found(format!("File not found: {}", req.path))),
         }
     }
 
-    async fn save(
+    async fn available_inserts(
         &self,
-        request: Request<SaveRequest>,
-    ) -> Result<Response<Void>, Status> {
+        request: Request<AvailableInsertsRequest>,
+    ) -> Result<Response<InsertOptions>, Status> {
         let req = request.into_inner();
-        
+
+        let mut files = self.files.lock().unwrap();
+        match files.get_mut(&req.path) {
+            Some(file_ast) => {
+                let node_id = Uuid::parse_str(&req.node_id).unwrap();
+                if let Some(parent) = find_node(file_ast, node_id) {
+                    let options = parent.get_options(&req.node_key);
+                    let mapped_option = options
+                        .into_iter()
+                        .map(c_language_object_to_proto)
+                        .collect();
+                    Ok(Response::new(InsertOptions {
+                        options: mapped_option,
+                    }))
+                } else {
+                    panic!() //TODO: Return a error status code if the node could not be replaced
+                }
+            }
+            None => panic!(), //TODO: Send a error status code if the file is not found
+        }
+    }
+
+    async fn save(&self, request: Request<SaveRequest>) -> Result<Response<Void>, Status> {
+        let req = request.into_inner();
+
         let file_ast = {
             let files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
             files.get(&req.path).cloned()
-        }.ok_or_else(|| Status::not_found(format!("File not found: {}", req.path)))?;
+        }
+        .ok_or_else(|| Status::not_found(format!("File not found: {}", req.path)))?;
 
         let c = C::new();
-        let output = c.write_to_nodes(file_ast).map_err(|err| Status::data_loss(err))?;
+        let output = c
+            .write_to_nodes(file_ast)
+            .map_err(|err| Status::data_loss(err))?;
 
         let path = Path::new(&req.write_path);
         if let Some(parent) = path.parent() {
@@ -130,8 +170,11 @@ impl CLenga for CLengaService {
                 .map_err(|e| Status::internal(format!("Failed to create directories: {}", e)))?;
         }
 
-        let mut output_file = File::create(req.write_path).map_err(|err| Status::from_error(Box::new(err)))?; 
-        output_file.write_all(&output).map_err(|err| Status::data_loss(err.to_string()))?;
+        let mut output_file =
+            File::create(req.write_path).map_err(|err| Status::from_error(Box::new(err)))?;
+        output_file
+            .write_all(&output)
+            .map_err(|err| Status::data_loss(err.to_string()))?;
 
         Ok(Response::new(proto::Void {}))
     }

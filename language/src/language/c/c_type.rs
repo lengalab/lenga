@@ -46,3 +46,9 @@ impl CType {
         Self::from_str(&type_str).unwrap()
     }
 }
+
+impl Default for CType {
+    fn default() -> Self {
+        CType::Void
+    }
+}

@@ -1,21 +1,32 @@
 use uuid::Uuid;
 
 use crate::language::c::{
-    language_object::LanguageObject as CLanguageObject,
+    language_object::expression_object::ExpressionObject,
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct BinaryExpression {
     pub id: Uuid,
-    pub left: Box<CLanguageObject>,
+    pub left: Box<ExpressionObject>,
     pub operator: String,
-    pub right: Box<CLanguageObject>,
+    pub right: Box<ExpressionObject>,
 }
 
 impl BinaryExpression {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
         w.write_binary_expression(&self)
+    }
+}
+
+impl Default for BinaryExpression {
+    fn default() -> Self {
+        BinaryExpression {
+            id: Uuid::new_v4(),
+            left: Box::new(ExpressionObject::default()),
+            operator: String::new(),
+            right: Box::new(ExpressionObject::default()),
+        }
     }
 }
 

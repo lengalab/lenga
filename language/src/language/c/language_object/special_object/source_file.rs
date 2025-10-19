@@ -1,14 +1,14 @@
 use uuid::Uuid;
 
 use crate::language::c::{
-    language_object::LanguageObject as CLanguageObject,
+    language_object::declaration_object::DeclarationObject,
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct SourceFile {
     pub id: Uuid,
-    pub code: Vec<CLanguageObject>,
+    pub code: Vec<DeclarationObject>,
 }
 
 impl SourceFile {

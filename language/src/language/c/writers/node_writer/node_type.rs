@@ -7,7 +7,6 @@ pub enum NodeType {
     Comment,
     Declaration,
     ElseClause,
-    ExpressionStatement,
     FunctionDeclaration,
     FunctionDefinition,
     FunctionParameter,
@@ -20,6 +19,7 @@ pub enum NodeType {
     TypeDescription,
     Symbol,
     CompoundStatement,
+    Unknown,
 }
 
 impl NodeType {
@@ -32,7 +32,6 @@ impl NodeType {
             NodeType::Comment => 4,
             NodeType::Declaration => 5,
             NodeType::ElseClause => 6,
-            NodeType::ExpressionStatement => 7,
             NodeType::FunctionDeclaration => 8,
             NodeType::FunctionDefinition => 9,
             NodeType::FunctionParameter => 10,
@@ -45,6 +44,7 @@ impl NodeType {
             NodeType::TypeDescription => 17,
             NodeType::Symbol => 18,
             NodeType::CompoundStatement => 19,
+            NodeType::Unknown => 404,
         }
     }
 }
@@ -59,7 +59,6 @@ impl From<NodeType> for u64 {
             NodeType::Comment => 4,
             NodeType::Declaration => 5,
             NodeType::ElseClause => 6,
-            NodeType::ExpressionStatement => 7,
             NodeType::FunctionDeclaration => 8,
             NodeType::FunctionDefinition => 9,
             NodeType::FunctionParameter => 10,
@@ -72,6 +71,7 @@ impl From<NodeType> for u64 {
             NodeType::TypeDescription => 17,
             NodeType::Symbol => 18,
             NodeType::CompoundStatement => 19,
+            NodeType::Unknown => 404,
         }
     }
 }
@@ -86,7 +86,6 @@ impl From<u64> for NodeType {
             4 => NodeType::Comment,
             5 => NodeType::Declaration,
             6 => NodeType::ElseClause,
-            7 => NodeType::ExpressionStatement,
             8 => NodeType::FunctionDeclaration,
             9 => NodeType::FunctionDefinition,
             10 => NodeType::FunctionParameter,
@@ -99,6 +98,7 @@ impl From<u64> for NodeType {
             17 => NodeType::TypeDescription,
             18 => NodeType::Symbol,
             19 => NodeType::CompoundStatement,
+            404 => NodeType::Unknown,
             _ => panic!("NodeType not supported"),
         }
     }

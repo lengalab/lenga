@@ -3,20 +3,31 @@ use std::collections::HashMap;
 
 use uuid::Uuid;
 
-use crate::language::c::language_object::compound_statement::CompoundStatement;
-use crate::language::c::language_object::function_declaration::FunctionDeclaration;
-use crate::language::c::language_object::source_file::SourceFile;
 use crate::language::c::language_object::{
-    LanguageObject as CLanguageObject, assignment_expression::AssignmentExpression,
-    binary_expression::BinaryExpression, call_expression::CallExpression, comment::Comment,
-    declaration::Declaration, else_clause::ElseClause, expression_statement::ExpressionStatement,
-    function_definition::FunctionDefinition, function_parameter::FunctionParameter,
-    if_statement::IfStatement, number_literal::NumberLiteral, preproc_include::PreprocInclude,
-    reference::Reference, return_statement::ReturnStatement, string_literal::StringLiteral,
+    LanguageObject as CLanguageObject,
+    declaration_object::{
+        declaration::Declaration,
+        function_declaration::{FunctionDeclaration, function_parameter::FunctionParameter},
+        function_definition::FunctionDefinition,
+        preproc_include::PreprocInclude,
+    },
+    expression_object::{
+        ExpressionObject, assignment_expression::AssignmentExpression,
+        binary_expression::BinaryExpression, call_expression::CallExpression,
+        number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
+    },
+    special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
+    statement_object::{
+        compound_statement::CompoundStatement,
+        if_statement::{IfStatement, else_clause::ElseClause},
+        return_statement::ReturnStatement,
+    },
 };
-use crate::language::c::parsers::context::Context;
-use crate::language::c::writers::Cursor;
-use crate::language::c::writers::node_writer::node_type::NodeType;
+
+use crate::language::c::{
+    parsers::context::Context,
+    writers::{Cursor, node_writer::node_type::NodeType},
+};
 use crate::node::{Node, ToNode, ToTags};
 
 use super::{Writer, writer_error::WriterError};
@@ -92,7 +103,20 @@ impl<'a> Cursor for NodeCursor<'a> {
             node_type: NodeType::SourceFile.as_u64(),
             content: "".to_string(), // TODO maybe the path?
             tags: HashMap::new(),
-            children: self.branch().to_nodes(&src_file.code)?,
+            children: self
+                .branch()
+                .to_nodes(&src_file.code.iter().map(|o| o.clone().into()).collect())?,
+        });
+        Ok(())
+    }
+
+    fn write_unknown(&mut self, unknown: &Unknown) -> Result<(), WriterError> {
+        self.nodes.push(Node {
+            id: unknown.id,
+            node_type: NodeType::Unknown.as_u64(),
+            content: unknown.content.clone(),
+            tags: HashMap::new(),
+            children: vec![],
         });
         Ok(())
     }
@@ -106,7 +130,7 @@ impl<'a> Cursor for NodeCursor<'a> {
             node_type: NodeType::AssignmentExpression.as_u64(),
             content: assignment_expression.id_declaration.to_string(),
             tags: HashMap::new(),
-            children: self.to_node(&assignment_expression.value)?,
+            children: self.to_node(&assignment_expression.value.as_language_object())?,
         });
         Ok(())
     }
@@ -115,8 +139,8 @@ impl<'a> Cursor for NodeCursor<'a> {
         &mut self,
         binary_expression: &BinaryExpression,
     ) -> Result<(), WriterError> {
-        let left = self.to_node(&binary_expression.left)?;
-        let right = self.to_node(&binary_expression.right)?;
+        let left = self.to_node(&binary_expression.left.as_language_object())?;
+        let right = self.to_node(&binary_expression.right.as_language_object())?;
         self.nodes.push(Node {
             id: Uuid::new_v4(),
             node_type: NodeType::BinaryExpression.as_u64(),
@@ -134,14 +158,15 @@ impl<'a> Cursor for NodeCursor<'a> {
         self.nodes.push(Node {
             id: call_expression.id,
             node_type: NodeType::CallExpression.as_u64(),
-            content: if call_expression.id_declaration != Uuid::nil()
-            {
+            content: if call_expression.id_declaration != Uuid::nil() {
                 call_expression.id_declaration.to_string()
             } else {
                 call_expression.identifier.clone()
             }, // TODO we won't need to save this when we figure out importing symbols from libraries
             tags: HashMap::new(),
-            children: self.to_nodes(&call_expression.argument_list)?,
+            children: self.to_nodes(&ExpressionObject::as_language_objects(
+                &call_expression.argument_list,
+            ))?,
         });
         Ok(())
     }
@@ -173,7 +198,7 @@ impl<'a> Cursor for NodeCursor<'a> {
             )]
             .to_tags(),
             children: if let Some(value) = &declaration.value {
-                self.to_node(value)?
+                self.to_node(&value.as_language_object())?
             } else {
                 vec![]
             },
@@ -187,7 +212,8 @@ impl<'a> Cursor for NodeCursor<'a> {
         if let Some(condition) = &else_clause.condition {
             tags.insert(
                 "condition".to_string(),
-                self.to_node(condition).unwrap_or(vec![]),
+                self.to_node(&condition.as_language_object())
+                    .unwrap_or(vec![]),
             );
         };
         self.nodes.push(Node {
@@ -197,23 +223,9 @@ impl<'a> Cursor for NodeCursor<'a> {
             tags,
             children: {
                 let mut branch = self.branch();
-                branch.write_compound_statement(&else_clause.compound_statement)?;
+                else_clause.compound_statement.write(&mut branch)?;
                 branch.nodes
             },
-        });
-        Ok(())
-    }
-
-    fn write_expression_statement(
-        &mut self,
-        expression_statement: &ExpressionStatement,
-    ) -> Result<(), WriterError> {
-        self.nodes.push(Node {
-            id: expression_statement.id,
-            node_type: NodeType::ExpressionStatement.as_u64(),
-            content: expression_statement.identifier.clone(),
-            tags: HashMap::new(),
-            children: self.to_nodes(&expression_statement.argument_list)?,
         });
         Ok(())
     }
@@ -339,7 +351,11 @@ impl<'a> Cursor for NodeCursor<'a> {
     }
 
     fn write_if_statement(&mut self, if_statement: &IfStatement) -> Result<(), WriterError> {
-        let mut tags = vec![("condition", self.to_node(&if_statement.condition)?)].to_tags();
+        let mut tags = vec![(
+            "condition",
+            self.to_node(&if_statement.condition.as_language_object())?,
+        )]
+        .to_tags();
 
         if let Some(else_clause) = &if_statement.else_clause {
             tags.insert(
@@ -354,7 +370,7 @@ impl<'a> Cursor for NodeCursor<'a> {
             tags,
             children: {
                 let mut branch = self.branch();
-                branch.write_compound_statement(&if_statement.compound_statement)?;
+                if_statement.compound_statement.write(&mut branch)?;
                 branch.nodes
             },
         });
@@ -406,7 +422,7 @@ impl<'a> Cursor for NodeCursor<'a> {
             id: Uuid::new_v4(),
             tags: HashMap::new(),
             content: "".to_string(),
-            children: self.to_node(&return_statement.value)?,
+            children: self.to_node(&return_statement.value.as_language_object())?,
         });
         Ok(())
     }
@@ -430,7 +446,13 @@ impl<'a> Cursor for NodeCursor<'a> {
             node_type: NodeType::CompoundStatement.as_u64(),
             content: "".to_string(),
             tags: HashMap::new(),
-            children: self.to_nodes(&compound_statement.code_block)?,
+            children: self.to_nodes(
+                &compound_statement
+                    .code_block
+                    .iter()
+                    .map(|o| o.clone().into())
+                    .collect(),
+            )?,
         });
         Ok(())
     }

@@ -4,13 +4,21 @@ pub mod writer_error;
 use writer_error::WriterError;
 
 use crate::language::c::language_object::{
-    LanguageObject, assignment_expression::AssignmentExpression,
-    binary_expression::BinaryExpression, call_expression::CallExpression, comment::Comment,
-    compound_statement::CompoundStatement, declaration::Declaration, else_clause::ElseClause,
-    expression_statement::ExpressionStatement, function_declaration::FunctionDeclaration,
-    function_definition::FunctionDefinition, if_statement::IfStatement,
-    number_literal::NumberLiteral, preproc_include::PreprocInclude, reference::Reference,
-    return_statement::ReturnStatement, source_file::SourceFile, string_literal::StringLiteral,
+    declaration_object::{
+        declaration::Declaration, function_declaration::FunctionDeclaration,
+        function_definition::FunctionDefinition, preproc_include::PreprocInclude,
+    },
+    expression_object::{
+        assignment_expression::AssignmentExpression, binary_expression::BinaryExpression,
+        call_expression::CallExpression, number_literal::NumberLiteral, reference::Reference,
+        string_literal::StringLiteral,
+    },
+    special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
+    statement_object::{
+        compound_statement::CompoundStatement,
+        if_statement::{IfStatement, else_clause::ElseClause},
+        return_statement::ReturnStatement,
+    },
 };
 
 pub trait Writer {
@@ -19,6 +27,8 @@ pub trait Writer {
 
 pub trait Cursor {
     fn write_source_file(&mut self, src_file: &SourceFile) -> Result<(), WriterError>;
+
+    fn write_unknown(&mut self, uknown: &Unknown) -> Result<(), WriterError>;
 
     fn write_assignment_expression(
         &mut self,
@@ -40,11 +50,6 @@ pub trait Cursor {
     fn write_declaration(&mut self, declaration: &Declaration) -> Result<(), WriterError>;
 
     fn write_else_clause(&mut self, else_clause: &ElseClause) -> Result<(), WriterError>;
-
-    fn write_expression_statement(
-        &mut self,
-        expression_statement: &ExpressionStatement,
-    ) -> Result<(), WriterError>;
 
     fn write_function_declaration(
         &mut self,

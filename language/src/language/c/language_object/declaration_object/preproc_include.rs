@@ -1,10 +1,8 @@
 use uuid::Uuid;
 
-use crate::language::c::{
-    writers::{Cursor, writer_error::WriterError},
-};
+use crate::language::c::writers::{Cursor, writer_error::WriterError};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct PreprocInclude {
     pub id: Uuid,
     pub content: String,
@@ -19,5 +17,14 @@ impl PreprocInclude {
 impl PartialEq for PreprocInclude {
     fn eq(&self, other: &Self) -> bool {
         self.content == other.content
+    }
+}
+
+impl Default for PreprocInclude {
+    fn default() -> Self {
+        PreprocInclude {
+            id: Uuid::new_v4(),
+            content: String::new(),
+        }
     }
 }

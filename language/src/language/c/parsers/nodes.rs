@@ -2,18 +2,32 @@ use uuid::Uuid;
 
 use crate::{
     language::c::{
+        c_type::CType,
         language_object::{
-            LanguageObject as CLanguageObject, assignment_expression::AssignmentExpression,
-            binary_expression::BinaryExpression, call_expression::CallExpression, comment::Comment,
-            compound_statement::CompoundStatement, declaration::Declaration,
-            else_clause::ElseClause, expression_statement::ExpressionStatement,
-            function_declaration::FunctionDeclaration, function_definition::FunctionDefinition,
-            function_parameter::FunctionParameter, if_statement::IfStatement,
-            number_literal::NumberLiteral, preproc_include::PreprocInclude, reference::Reference,
-            return_statement::ReturnStatement, source_file::SourceFile,
-            string_literal::StringLiteral,
+            LanguageObject as CLanguageObject,
+            declaration_object::{
+                DeclarationObject,
+                declaration::Declaration,
+                function_declaration::{
+                    FunctionDeclaration, function_parameter::FunctionParameter,
+                },
+                function_definition::FunctionDefinition,
+                preproc_include::PreprocInclude,
+            },
+            expression_object::{
+                ExpressionObject, assignment_expression::AssignmentExpression,
+                binary_expression::BinaryExpression, call_expression::CallExpression,
+                number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
+            },
+            special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
+            statement_object::{
+                compound_statement::{
+                    CompoundStatement, compound_statement_object::CompoundStatementObject,
+                },
+                if_statement::{IfStatement, else_clause::ElseClause},
+                return_statement::ReturnStatement,
+            },
         },
-        object_types::c_type::CType,
         parsers::context::{Context, SymbolAlreadyExists},
         writers::node_writer::node_type::NodeType,
     },
@@ -25,6 +39,7 @@ pub enum NodeParserError {
     SymbolAlreadyExists(SymbolAlreadyExists),
     MissingSymbol(String),
     EmptyVec,
+    WrongType(String),
 }
 
 impl From<SymbolAlreadyExists> for NodeParserError {
@@ -39,6 +54,7 @@ impl From<NodeParserError> for String {
             NodeParserError::SymbolAlreadyExists(_) => "Symbol already exists".to_string(),
             NodeParserError::MissingSymbol(name) => format!("Missing symbol: {}", name),
             NodeParserError::EmptyVec => "Tried to parse empty vec".to_string(),
+            NodeParserError::WrongType(ty) => format!("Tried to parse wrong type: {}", ty),
         }
     }
 }
@@ -91,9 +107,6 @@ impl<'a> NodeParser<'a> {
                 CLanguageObject::Declaration(self.declaration_from_node(node)?)
             }
             NodeType::ElseClause => CLanguageObject::ElseClause(self.else_clause_from_node(node)?),
-            NodeType::ExpressionStatement => {
-                CLanguageObject::ExpressionStatement(self.expression_statement_from_node(node)?)
-            }
             NodeType::FunctionDeclaration => {
                 CLanguageObject::FunctionDeclaration(self.function_declaration_from_node(node)?)
             }
@@ -122,6 +135,7 @@ impl<'a> NodeParser<'a> {
             NodeType::CompoundStatement => {
                 CLanguageObject::CompoundStatement(self.compound_statement_from_node(node)?)
             }
+            NodeType::Unknown => CLanguageObject::Unknown(self.unknown_from_node(node)),
         })
     }
 
@@ -129,14 +143,11 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::SourceFile.as_u64());
 
         let mut branch = self.branch();
-        let mut code: Vec<CLanguageObject> = Vec::new();
+        let mut code: Vec<DeclarationObject> = Vec::new();
         for child in node.children {
-            code.push(branch.clanguageobject_from_node(child)?)
+            code.push(branch.clanguageobject_from_node(child)?.try_into()?);
         }
-        Ok(SourceFile {
-            id: node.id,
-            code,
-        })
+        Ok(SourceFile { id: node.id, code })
     }
 
     fn assignment_expression_from_node(
@@ -150,7 +161,7 @@ impl<'a> NodeParser<'a> {
             id: node.id,
             id_declaration,
             identifier,
-            value: self.unpack_parse(node.children)?,
+            value: self.unpack_parse(node.children)?.try_into()?,
         })
     }
 
@@ -172,9 +183,9 @@ impl<'a> NodeParser<'a> {
         let right = node.tags.remove("right").unwrap().pop().unwrap();
         Ok(BinaryExpression {
             id: node.id,
-            left: Box::new(self.clanguageobject_from_node(left)?),
+            left: Box::new(self.clanguageobject_from_node(left)?.try_into()?),
             operator: node.content,
-            right: Box::new(self.clanguageobject_from_node(right)?),
+            right: Box::new(self.clanguageobject_from_node(right)?.try_into()?),
         })
     }
 
@@ -182,10 +193,13 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::CallExpression.as_u64());
 
         let (id_declaration, identifier) = match Uuid::parse_str(&node.content) {
-            Ok(id_declaration) => (id_declaration, self.context.get_symbol_identifier(&id_declaration).unwrap()),
+            Ok(id_declaration) => (
+                id_declaration,
+                self.context.get_symbol_identifier(&id_declaration).unwrap(),
+            ),
             Err(_) => (Uuid::nil(), node.content),
         };
-            
+
         Ok(CallExpression {
             id: node.id,
             id_declaration,
@@ -194,7 +208,10 @@ impl<'a> NodeParser<'a> {
                 .children
                 .into_iter()
                 .map(|arg| self.clanguageobject_from_node(arg))
-                .collect::<Result<Vec<CLanguageObject>, NodeParserError>>()?,
+                .collect::<Result<Vec<CLanguageObject>, NodeParserError>>()?
+                .into_iter()
+                .map(|arg| ExpressionObject::try_from(arg).map_err(|err| err.into()))
+                .collect::<Result<Vec<ExpressionObject>, NodeParserError>>()?,
         })
     }
 
@@ -208,6 +225,11 @@ impl<'a> NodeParser<'a> {
 
     fn declaration_from_node(&mut self, mut node: Node) -> Result<Declaration, NodeParserError> {
         assert_eq!(node.node_type, NodeType::Declaration.as_u64());
+        let value = node
+            .children
+            .pop()
+            .map(|value| self.clanguageobject_from_node(value).map(Box::new))
+            .transpose()?;
         Ok(Declaration {
             id: self
                 .context
@@ -217,40 +239,23 @@ impl<'a> NodeParser<'a> {
             )
             .unwrap(),
             identifier: node.content,
-            value: node
-                .children
-                .pop()
-                .map(|value| self.clanguageobject_from_node(value).map(Box::new))
-                .transpose()?,
+            value: value.map(|c| c.try_into()).transpose()?,
         })
     }
 
     fn else_clause_from_node(&mut self, mut node: Node) -> Result<ElseClause, NodeParserError> {
         assert_eq!(node.node_type, NodeType::ElseClause.as_u64());
+        let condition = node
+            .tags
+            .remove("condition")
+            .map(|value| self.unpack_parse(value))
+            .transpose()?;
         Ok(ElseClause {
             id: node.id,
-            condition: node
-                .tags
-                .remove("condition")
-                .map(|value| self.unpack_parse(value))
-                .transpose()?,
-            compound_statement: self.compound_statement_from_node(node.children.pop().unwrap())?,
-        })
-    }
-
-    fn expression_statement_from_node(
-        &mut self,
-        node: Node,
-    ) -> Result<ExpressionStatement, NodeParserError> {
-        assert_eq!(node.node_type, NodeType::ExpressionStatement.as_u64());
-        Ok(ExpressionStatement {
-            id: node.id,
-            identifier: self.context.get_symbol_identifier(&node.id).unwrap(),
-            argument_list: node
-                .children
-                .into_iter()
-                .map(|arg| self.clanguageobject_from_node(arg))
-                .collect::<Result<Vec<CLanguageObject>, NodeParserError>>()?,
+            condition: condition.map(|c| c.try_into()).transpose()?,
+            compound_statement: self
+                .compound_statement_from_node(node.children.pop().unwrap())?
+                .try_into()?,
         })
     }
 
@@ -347,10 +352,13 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::IfStatement.as_u64());
         Ok(IfStatement {
             id: node.id,
-            condition: self.unpack_parse(node.tags.remove("condition").unwrap())?,
+            condition: self
+                .unpack_parse(node.tags.remove("condition").unwrap())?
+                .try_into()?,
             compound_statement: self
                 .branch()
-                .compound_statement_from_node(node.children.pop().unwrap())?,
+                .compound_statement_from_node(node.children.pop().unwrap())?
+                .try_into()?,
             else_clause: node
                 .tags
                 .remove("else_clause")
@@ -397,7 +405,7 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::ReturnStatement.as_u64());
         Ok(ReturnStatement {
             id: node.id,
-            value: self.unpack_parse(node.children)?,
+            value: self.unpack_parse(node.children)?.try_into()?,
         })
     }
 
@@ -416,13 +424,20 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::CompoundStatement.as_u64());
 
         let mut branch = self.branch();
-        let mut code_block: Vec<CLanguageObject> = Vec::new();
+        let mut code_block: Vec<CompoundStatementObject> = Vec::new();
         for child in node.children {
-            code_block.push(branch.clanguageobject_from_node(child)?)
+            code_block.push(branch.clanguageobject_from_node(child)?.try_into()?)
         }
-        Ok(CompoundStatement { 
+        Ok(CompoundStatement {
             id: node.id,
             code_block,
         })
+    }
+
+    fn unknown_from_node(&self, node: Node) -> Unknown {
+        Unknown {
+            id: node.id,
+            content: node.content,
+        }
     }
 }
