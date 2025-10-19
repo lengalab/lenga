@@ -158,10 +158,8 @@ fn replace_assignment_expression(
                 expr, new_expr,
             )));
         }
-    } else {
-        if let Some(found) = replace_expression_object(&mut expr.value, new_object) {
-            return Some(found);
-        }
+    } else if let Some(found) = replace_expression_object(&mut expr.value, new_object) {
+        return Some(found);
     }
     None
 }
@@ -232,11 +230,9 @@ fn replace_declaration(
                 decl, new_decl,
             )));
         }
-    } else {
-        if let Some(val) = &mut decl.value {
-            if let Some(found) = replace_expression_object(val, new_object) {
-                return Some(found);
-            }
+    } else if let Some(val) = &mut decl.value {
+        if let Some(found) = replace_expression_object(val, new_object) {
+            return Some(found);
         }
     }
     None
@@ -253,12 +249,10 @@ fn replace_else_clause(
                 new_else,
             )));
         }
-    } else {
-        if let Some(found) =
-            replace_statement_object(&mut else_clause.compound_statement, new_object)
-        {
-            return Some(found);
-        }
+    } else if let Some(found) =
+        replace_statement_object(&mut else_clause.compound_statement, new_object)
+    {
+        return Some(found);
     }
     None
 }
@@ -398,10 +392,8 @@ fn replace_return_statement(
                 stmt, new_stmt,
             )));
         }
-    } else {
-        if let Some(found) = replace_expression_object(&mut stmt.value, new_object) {
-            return Some(found);
-        }
+    } else if let Some(found) = replace_expression_object(&mut stmt.value, new_object) {
+        return Some(found);
     }
     None
 }
@@ -456,251 +448,263 @@ fn replace_unknown(
     None
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use core::panic;
+#[cfg(test)]
+mod tests {
+    use core::panic;
 
-//     use super::*;
-//     use language::language::c;
-//     use uuid::Uuid;
+    use super::*;
+    use language::language::c;
+    use uuid::Uuid;
 
-//     #[test]
-//     fn test_01_replace_root() {
-//         let decl_id = Uuid::new_v4();
-//         let primitive_type = c::c_type::CType::Int;
-//         let decl_identifier = "a";
-//         let decl = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_id,
-//             primitive_type,
-//             identifier: decl_identifier.to_string(),
-//             value: None,
-//         };
+    #[test]
+    fn test_01_replace_root() {
+        let decl_id = Uuid::new_v4();
+        let primitive_type = c::c_type::CType::Int;
+        let decl_identifier = "a";
+        let decl = c::language_object::declaration_object::declaration::Declaration {
+            id: decl_id,
+            primitive_type,
+            identifier: decl_identifier.to_string(),
+            value: None,
+        };
 
-//         let decl_in_id = Uuid::new_v4();
-//         let primitive_type_in = c::c_type::CType::Int;
-//         let decl_in_identifier = "b";
-//         let decl_in = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_in_id,
-//             primitive_type: primitive_type_in,
-//             identifier: decl_in_identifier.to_string(),
-//             value: None,
-//         };
+        let param_id = Uuid::new_v4();
+        let param_type = c::c_type::CType::Int;
+        let param_identifier = "b";
+        let param = c::language_object::declaration_object::function_declaration::function_parameter::FunctionParameter {
+            id: param_id,
+            identifier: param_identifier.to_string(),
+            param_type,
+        };
 
-//         let comp_stmt_id = Uuid::new_v4();
-//         let comp_stmt =
-//             c::language_object::statement_object::compound_statement::CompoundStatement {
-//                 id: comp_stmt_id,
-//                 code_block: vec![c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::Declaration(decl_in)],
-//             };
+        let func_decl_id = Uuid::new_v4();
+        let func_decl_return_type = c::c_type::CType::Int;
+        let func_decl_identifier = "c";
+        let func_decl =
+            c::language_object::declaration_object::function_declaration::FunctionDeclaration {
+                id: func_decl_id,
+                return_type: func_decl_return_type,
+                identifier: func_decl_identifier.to_string(),
+                parameter_list: vec![param]
+            };
 
-//         let src_file_id = Uuid::new_v4();
-//         let src_file = c::language_object::special_object::source_file::SourceFile {
-//             id: src_file_id,
-//             code: vec![
-//                 c::language_object::declaration_object::DeclarationObject::Declaration(decl),
-//                 c::language_object::declaration_object::DeclarationObject::CompoundStatement(
-//                     comp_stmt,
-//                 ),
-//             ],
-//         };
+        let src_file_id = Uuid::new_v4();
+        let src_file = c::language_object::special_object::source_file::SourceFile {
+            id: src_file_id,
+            code: vec![
+                c::language_object::declaration_object::DeclarationObject::Declaration(decl),
+                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(
+                    func_decl,
+                ),
+            ],
+        };
 
-//         let replace = c::language_object::LanguageObject::SourceFile(
-//             c::language_object::special_object::source_file::SourceFile {
-//                 id: src_file_id,
-//                 code: vec![],
-//             },
-//         );
+        let replace = c::language_object::LanguageObject::SourceFile(
+            c::language_object::special_object::source_file::SourceFile {
+                id: src_file_id,
+                code: vec![],
+            },
+        );
 
-//         let mut code = c::language_object::LanguageObject::SourceFile(src_file);
-//         let replaced_object = replace_object(&mut code, replace);
+        let mut code = c::language_object::LanguageObject::SourceFile(src_file);
+        let replaced_object = replace_object(&mut code, replace);
 
-//         assert!(replaced_object.is_some());
-//         match code {
-//             c::language_object::LanguageObject::SourceFile(src) => {
-//                 assert_eq!(src.code.len(), 0);
-//             }
-//             _ => panic!("Expected a SourceFile"),
-//         }
-//     }
+        assert!(replaced_object.is_some());
+        match code {
+            c::language_object::LanguageObject::SourceFile(src) => {
+                assert_eq!(src.code.len(), 0);
+            }
+            _ => panic!("Expected a SourceFile"),
+        }
+    }
 
-//     #[test]
-//     fn test_02_replace_child() {
-//         let decl_id = Uuid::new_v4();
-//         let primitive_type = c::c_type::CType::Int;
-//         let decl_identifier = "a";
-//         let decl = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_id,
-//             primitive_type,
-//             identifier: decl_identifier.to_string(),
-//             value: None,
-//         };
+    #[test]
+    fn test_02_replace_child() {
+        let decl_id = Uuid::new_v4();
+        let primitive_type = c::c_type::CType::Int;
+        let decl_identifier = "a";
+        let decl = c::language_object::declaration_object::declaration::Declaration {
+            id: decl_id,
+            primitive_type,
+            identifier: decl_identifier.to_string(),
+            value: None,
+        };
 
-//         let decl_in_id = Uuid::new_v4();
-//         let primitive_type_in = c::c_type::CType::Int;
-//         let decl_in_identifier = "b";
-//         let decl_in = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_in_id,
-//             primitive_type: primitive_type_in,
-//             identifier: decl_in_identifier.to_string(),
-//             value: None,
-//         };
+        let param_id = Uuid::new_v4();
+        let param_type = c::c_type::CType::Int;
+        let param_identifier = "b";
+        let param = c::language_object::declaration_object::function_declaration::function_parameter::FunctionParameter {
+            id: param_id,
+            identifier: param_identifier.to_string(),
+            param_type,
+        };
 
-//         let comp_stmt_id = Uuid::new_v4();
-//         let comp_stmt =
-//             c::language_object::statement_object::compound_statement::CompoundStatement {
-//                 id: comp_stmt_id,
-//                 code_block: vec![c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::Declaration(decl_in)],
-//             };
+        let func_decl_id = Uuid::new_v4();
+        let func_decl_return_type = c::c_type::CType::Int;
+        let func_decl_identifier = "c";
+        let func_decl =
+            c::language_object::declaration_object::function_declaration::FunctionDeclaration {
+                id: func_decl_id,
+                return_type: func_decl_return_type.clone(),
+                identifier: func_decl_identifier.to_string(),
+                parameter_list: vec![param]
+            };
 
-//         let src_file_id = Uuid::new_v4();
-//         let src_file = c::language_object::special_object::source_file::SourceFile {
-//             id: src_file_id,
-//             code: vec![
-//                 language_object::declaration_object::DeclarationObject::Declaration(decl),
-//                 language_object::declaration_object::DeclarationObject::CompoundStatement(
-//                     comp_stmt,
-//                 ),
-//             ],
-//         };
+        let src_file_id = Uuid::new_v4();
+        let src_file = c::language_object::special_object::source_file::SourceFile {
+            id: src_file_id,
+            code: vec![
+                c::language_object::declaration_object::DeclarationObject::Declaration(decl),
+                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(
+                    func_decl,
+                ),
+            ],
+        };
 
-//         let replace = c::language_object::LanguageObject::CompoundStatement(
-//             c::language_object::compound_statement::CompoundStatement {
-//                 id: comp_stmt_id,
-//                 code_block: vec![],
-//             },
-//         );
+        let replace = c::language_object::LanguageObject::FunctionDeclaration(
+            c::language_object::declaration_object::function_declaration::FunctionDeclaration {
+                id: func_decl_id,
+                return_type: func_decl_return_type,
+                identifier: func_decl_identifier.to_string(),
+                parameter_list: vec![]
+            });
 
-//         let mut code = c::language_object::LanguageObject::SourceFile(src_file);
-//         let replaced_object = replace_object(&mut code, replace);
+        let mut code = c::language_object::LanguageObject::SourceFile(src_file);
+        let replaced_object = replace_object(&mut code, replace);
 
-//         assert!(replaced_object.is_some());
-//         match code {
-//             c::language_object::LanguageObject::SourceFile(src) => match &src.code[1] {
-//                 c::language_object::LanguageObject::CompoundStatement(comp) => {
-//                     assert_eq!(comp.code_block.len(), 0);
-//                 }
-//                 _ => panic!("Expected a CompoundStatement"),
-//             },
-//             _ => panic!("Expected a SourceFile"),
-//         }
-//     }
+        assert!(replaced_object.is_some());
+        match code {
+            c::language_object::LanguageObject::SourceFile(src) => match &src.code[1] {
+                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(func) => {
+                    assert_eq!(func.parameter_list.len(), 0);
+                }
+                _ => panic!("Expected a CompoundStatement"),
+            },
+            _ => panic!("Expected a SourceFile"),
+        }
+    }
 
-//     #[test]
-//     fn test_03_replace_leaf() {
-//         let decl_id = Uuid::new_v4();
-//         let primitive_type = c::c_type::CType::Int;
-//         let decl_identifier = "a";
-//         let decl = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_id,
-//             primitive_type,
-//             identifier: decl_identifier.to_string(),
-//             value: None,
-//         };
+    #[test]
+    fn test_03_replace_leaf() {
+        let decl_id = Uuid::new_v4();
+        let primitive_type = c::c_type::CType::Int;
+        let decl_identifier = "a";
+        let decl = c::language_object::declaration_object::declaration::Declaration {
+            id: decl_id,
+            primitive_type,
+            identifier: decl_identifier.to_string(),
+            value: None,
+        };
 
-//         let decl_in_id = Uuid::new_v4();
-//         let primitive_type_in = c::c_type::CType::Int;
-//         let decl_in_identifier = "b";
-//         let decl_in = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_in_id,
-//             primitive_type: primitive_type_in,
-//             identifier: decl_in_identifier.to_string(),
-//             value: None,
-//         };
+        let param_id = Uuid::new_v4();
+        let param_type = c::c_type::CType::Int;
+        let param_identifier = "b";
+        let param = c::language_object::declaration_object::function_declaration::function_parameter::FunctionParameter {
+            id: param_id,
+            identifier: param_identifier.to_string(),
+            param_type,
+        };
 
-//         let comp_stmt_id = Uuid::new_v4();
-//         let comp_stmt =
-//             c::language_object::statement_object::compound_statement::CompoundStatement {
-//                 id: comp_stmt_id,
-//                 code_block: vec![
-//                     c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::Declaration(decl_in),
-//                 ],
-//             };
+        let func_decl_id = Uuid::new_v4();
+        let func_decl_return_type = c::c_type::CType::Int;
+        let func_decl_identifier = "c";
+        let func_decl =
+            c::language_object::declaration_object::function_declaration::FunctionDeclaration {
+                id: func_decl_id,
+                return_type: func_decl_return_type.clone(),
+                identifier: func_decl_identifier.to_string(),
+                parameter_list: vec![param]
+            };
 
-//         let src_file_id = Uuid::new_v4();
-//         let src_file = c::language_object::special_object::source_file::SourceFile {
-//             id: src_file_id,
-//             code: vec![
-//                 language_object::declaration_object::DeclarationObject::Declaration(decl),
-//                 language_object::declaration_object::DeclarationObject::CompoundStatement(
-//                     comp_stmt,
-//                 ),
-//             ],
-//         };
+        let src_file_id = Uuid::new_v4();
+        let src_file = c::language_object::special_object::source_file::SourceFile {
+            id: src_file_id,
+            code: vec![
+                language_object::declaration_object::DeclarationObject::Declaration(decl),
+                language_object::declaration_object::DeclarationObject::FunctionDeclaration(
+                    func_decl,
+                ),
+            ],
+        };
 
-//         let new_type = c::c_type::CType::Char;
-//         let replace = c::language_object::LanguageObject::Declaration(
-//             c::language_object::declaration_object::declaration::Declaration {
-//                 id: decl_id,
-//                 primitive_type: new_type.clone(),
-//                 identifier: decl_identifier.to_string(),
-//                 value: None,
-//             },
-//         );
+        let new_type = c::c_type::CType::Char;
+        let replace = c::language_object::LanguageObject::Declaration(
+            c::language_object::declaration_object::declaration::Declaration {
+                id: decl_id,
+                primitive_type: new_type.clone(),
+                identifier: decl_identifier.to_string(),
+                value: None,
+            },
+        );
 
-//         let mut code = c::language_object::LanguageObject::SourceFile(src_file);
-//         let replaced_object = replace_object(&mut code, replace);
+        let mut code = c::language_object::LanguageObject::SourceFile(src_file);
+        let replaced_object = replace_object(&mut code, replace);
 
-//         assert!(replaced_object.is_some());
-//         match code {
-//             c::language_object::LanguageObject::SourceFile(src) => match &src.code[0] {
-//                 c::language_object::LanguageObject::Declaration(decl) => {
-//                     assert_eq!(decl.identifier, decl_identifier);
-//                     assert_eq!(decl.primitive_type, new_type);
-//                     assert!(decl.value.is_none());
-//                 }
-//                 _ => panic!("Expected a CompoundStatement"),
-//             },
-//             _ => panic!("Expected a SourceFile"),
-//         }
-//     }
+        assert!(replaced_object.is_some());
+        match code {
+            c::language_object::LanguageObject::SourceFile(src) => match &src.code[0] {
+                c::language_object::declaration_object::DeclarationObject::Declaration(decl) => {
+                    assert_eq!(decl.identifier, decl_identifier);
+                    assert_eq!(decl.primitive_type, new_type);
+                    assert!(decl.value.is_none());
+                }
+                _ => panic!("Expected a CompoundStatement"),
+            },
+            _ => panic!("Expected a SourceFile"),
+        }
+    }
 
-//     #[test]
-//     fn test_04_replace_inexistent() {
-//         let decl_id = Uuid::new_v4();
-//         let primitive_type = c::c_type::CType::Int;
-//         let decl_identifier = "a";
-//         let decl = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_id,
-//             primitive_type,
-//             identifier: decl_identifier.to_string(),
-//             value: None,
-//         };
+    #[test]
+    fn test_04_replace_inexistent() {
+        let decl_id = Uuid::new_v4();
+        let primitive_type = c::c_type::CType::Int;
+        let decl_identifier = "a";
+        let decl = c::language_object::declaration_object::declaration::Declaration {
+            id: decl_id,
+            primitive_type,
+            identifier: decl_identifier.to_string(),
+            value: None,
+        };
 
-//         let decl_in_id = Uuid::new_v4();
-//         let primitive_type_in = c::c_type::CType::Int;
-//         let decl_in_identifier = "b";
-//         let decl_in = c::language_object::declaration_object::declaration::Declaration {
-//             id: decl_in_id,
-//             primitive_type: primitive_type_in,
-//             identifier: decl_in_identifier.to_string(),
-//             value: None,
-//         };
+        let param_id = Uuid::new_v4();
+        let param_type = c::c_type::CType::Int;
+        let param_identifier = "b";
+        let param = c::language_object::declaration_object::function_declaration::function_parameter::FunctionParameter {
+            id: param_id,
+            identifier: param_identifier.to_string(),
+            param_type,
+        };
 
-//         let comp_stmt_id = Uuid::new_v4();
-//         let comp_stmt = c::language_object::compound_statement::CompoundStatement {
-//             id: comp_stmt_id,
-//             code_block: vec![c::language_object::LanguageObject::Declaration(decl_in)],
-//         };
+        let func_decl_id = Uuid::new_v4();
+        let func_decl_return_type = c::c_type::CType::Int;
+        let func_decl_identifier = "c";
+        let func_decl =
+            c::language_object::declaration_object::function_declaration::FunctionDeclaration {
+                id: func_decl_id,
+                return_type: func_decl_return_type.clone(),
+                identifier: func_decl_identifier.to_string(),
+                parameter_list: vec![param]
+            };
 
-//         let src_file_id = Uuid::new_v4();
-//         let src_file = c::language_object::special_object::source_file::SourceFile {
-//             id: src_file_id,
-//             code: vec![
-//                 c::language_object::LanguageObject::Declaration(decl),
-//                 c::language_object::LanguageObject::CompoundStatement(comp_stmt),
-//             ],
-//         };
+        let src_file_id = Uuid::new_v4();
+        let src_file = c::language_object::special_object::source_file::SourceFile {
+            id: src_file_id,
+            code: vec![
+                c::language_object::declaration_object::DeclarationObject::Declaration(decl),
+                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(func_decl),
+            ],
+        };
 
-//         let replace = c::language_object::LanguageObject::Comment(
-//             c::language_object::special_object::comment::Comment {
-//                 id: Uuid::new_v4(),
-//                 content: "test".to_string(),
-//             },
-//         );
+        let replace = c::language_object::LanguageObject::Comment(
+            c::language_object::special_object::comment::Comment {
+                id: Uuid::new_v4(),
+                content: "test".to_string(),
+            },
+        );
 
-//         let mut code = c::language_object::LanguageObject::SourceFile(src_file);
-//         let replaced_object = replace_object(&mut code, replace);
+        let mut code = c::language_object::LanguageObject::SourceFile(src_file);
+        let replaced_object = replace_object(&mut code, replace);
 
-//         assert!(replaced_object.is_none());
-//     }
-// }
+        assert!(replaced_object.is_none());
+    }
+}
