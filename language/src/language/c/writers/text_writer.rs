@@ -1,19 +1,26 @@
 pub mod style;
 
 use super::{Writer, writer_error::WriterError};
-use crate::language::c::{
-    language_object::{
-        LanguageObject as CLanguageObject, assignment_expression::AssignmentExpression,
-        binary_expression::BinaryExpression, call_expression::CallExpression, comment::Comment,
-        compound_statement::CompoundStatement, declaration::Declaration, else_clause::ElseClause,
-        expression_statement::ExpressionStatement, function_declaration::FunctionDeclaration,
-        function_definition::FunctionDefinition, function_parameter::FunctionParameter,
-        if_statement::IfStatement, number_literal::NumberLiteral, preproc_include::PreprocInclude,
-        reference::Reference, return_statement::ReturnStatement, source_file::SourceFile,
+use crate::language::c::language_object::{
+    declaration_object::{
+        declaration::Declaration,
+        function_declaration::{FunctionDeclaration, function_parameter::FunctionParameter},
+        function_definition::FunctionDefinition,
+        preproc_include::PreprocInclude,
+    },
+    expression_object::{
+        assignment_expression::AssignmentExpression, binary_expression::BinaryExpression,
+        call_expression::CallExpression, number_literal::NumberLiteral, reference::Reference,
         string_literal::StringLiteral,
     },
-    writers::Cursor,
+    special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
+    statement_object::{
+        compound_statement::CompoundStatement,
+        if_statement::{IfStatement, else_clause::ElseClause},
+        return_statement::ReturnStatement,
+    },
 };
+use crate::language::c::writers::Cursor;
 
 pub struct TextWriter<'a> {
     indent_level: usize,
@@ -154,6 +161,10 @@ impl<'a> Cursor for TextWriter<'a> {
         Ok(())
     }
 
+    fn write_unknown(&mut self, unknown: &Unknown) -> Result<(), WriterError> {
+        self.writeln(&unknown.content)
+    }
+
     fn write_assignment_expression(
         &mut self,
         assignment_expression: &AssignmentExpression,
@@ -211,20 +222,7 @@ impl<'a> Cursor for TextWriter<'a> {
             self.close_block()?;
         }
         self.write(" ")?;
-        self.write_compound_statement(&else_clause.compound_statement)?;
-        Ok(())
-    }
-
-    fn write_expression_statement(
-        &mut self,
-        expression_statement: &ExpressionStatement,
-    ) -> Result<(), WriterError> {
-        self.write(&format!("{}", expression_statement.identifier))?;
-        let argf = expression_statement
-            .argument_list
-            .iter()
-            .map(|a| |w: &mut Self| a.write(w));
-        self.write_paren_block(argf)?;
+        else_clause.compound_statement.write(self)?;
         Ok(())
     }
 
@@ -301,14 +299,14 @@ impl<'a> Cursor for TextWriter<'a> {
 
     fn write_if_statement(&mut self, if_statement: &IfStatement) -> Result<(), WriterError> {
         self.write("if ")?;
-        
+
         self.open_block(Delimitator::Paren)?;
         if_statement.condition.write(self)?;
         self.close_block()?;
 
         self.write(&format!(" "))?;
 
-        self.write_compound_statement(&if_statement.compound_statement)?;
+        if_statement.compound_statement.write(self)?;
         if let Some(else_clause) = &if_statement.else_clause {
             else_clause.write(self)?
         }

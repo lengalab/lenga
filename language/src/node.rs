@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Error};
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 
-use crate::language::c::{writers::node_writer::node_type::NodeType};
+use crate::language::c::writers::node_writer::node_type::NodeType;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -19,8 +19,6 @@ pub fn serialize(nodes: &Vec<Node>) -> Result<Vec<u8>, Error> {
     let bin = bincode::serialize(nodes).unwrap();
     Ok(bin)
 }
-
-// pub fn parse_nodes()
 
 pub trait UuidFromSeed {
     fn from_seed(seed: &str) -> Uuid;

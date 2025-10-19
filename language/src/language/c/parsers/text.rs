@@ -1,24 +1,45 @@
 use uuid::Uuid;
 
-use crate::language::c::{
-    TreeSitterNodeExt,
-    language_object::{
-        LanguageObject as CLanguageObject, assignment_expression::AssignmentExpression,
-        binary_expression::BinaryExpression, call_expression::CallExpression, comment::Comment,
-        compound_statement::CompoundStatement, declaration::Declaration, else_clause::ElseClause,
-        function_declaration::FunctionDeclaration, function_definition::FunctionDefinition,
-        function_parameter::FunctionParameter, if_statement::IfStatement,
-        number_literal::NumberLiteral, preproc_include::PreprocInclude, reference::Reference,
-        return_statement::ReturnStatement, string_literal::StringLiteral,
+use crate::{
+    language::c::{
+        c_type::CType,
+        language_object::{
+            ConversionError, LanguageObject as CLanguageObject,
+            declaration_object::{
+                DeclarationObject,
+                declaration::Declaration,
+                function_declaration::{
+                    FunctionDeclaration, function_parameter::FunctionParameter,
+                },
+                function_definition::FunctionDefinition,
+                preproc_include::PreprocInclude,
+            },
+            expression_object::{
+                ExpressionObject, assignment_expression::AssignmentExpression,
+                binary_expression::BinaryExpression, call_expression::CallExpression,
+                number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
+            },
+            special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
+            statement_object::{
+                StatementObject,
+                compound_statement::CompoundStatement,
+                if_statement::{IfStatement, else_clause::ElseClause},
+                return_statement::ReturnStatement,
+            },
+        },
+        parsers::context::{Context, SymbolAlreadyExists},
+        writers::node_writer::node_type::NodeType,
     },
-    object_types::c_type::CType,
-    parsers::context::{Context, SymbolAlreadyExists},
+    node::Node,
 };
+
+use crate::language::c::TreeSitterNodeExt;
 
 #[derive(Debug)]
 pub enum TreeSitterParserError {
     SymbolAlreadyExists(SymbolAlreadyExists),
     MissingSymbol(String),
+    WrongType(String),
 }
 
 impl From<SymbolAlreadyExists> for TreeSitterParserError {
@@ -34,6 +55,7 @@ impl From<TreeSitterParserError> for String {
             TreeSitterParserError::MissingSymbol(name) => {
                 format!("Missing symbol: {}", name)
             }
+            TreeSitterParserError::WrongType(ty) => format!("Wrong type: {}", ty),
         }
     }
 }
@@ -102,7 +124,11 @@ impl<'a> TreeSitterParser<'a> {
         }
         Ok(CompoundStatement {
             id: Uuid::new_v4(),
-            code_block: branch.objects,
+            code_block: branch
+                .objects
+                .into_iter()
+                .map(|o| o.try_into())
+                .collect::<Result<Vec<_>, _>>()?,
         })
     }
 
@@ -127,7 +153,10 @@ impl<'a> TreeSitterParser<'a> {
             ),
             "number_literal" => {
                 let value = node.content(source_code);
-                CLanguageObject::NumberLiteral(NumberLiteral { id: Uuid::new_v4(), value })
+                CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
+                    value,
+                })
             }
             "string_literal" => CLanguageObject::StringLiteral(
                 self.string_literal_from_tree_sitter_node(node, source_code)?,
@@ -196,7 +225,7 @@ impl<'a> TreeSitterParser<'a> {
                     id: self.context.insert_symbol(&identifier, false)?,
                     primitive_type,
                     identifier,
-                    value: Some(Box::new(value)),
+                    value: Some(Box::new(value.try_into()?)),
                 }))
             }
             "identifier" => {
@@ -261,7 +290,7 @@ impl<'a> TreeSitterParser<'a> {
             .unwrap();
         Ok(ReturnStatement {
             id: Uuid::new_v4(),
-            value: Box::new(value),
+            value: Box::new(value.try_into()?),
         })
     }
 
@@ -276,7 +305,11 @@ impl<'a> TreeSitterParser<'a> {
             .context
             .get_symbol_id(&identifier, false)
             .ok_or(TreeSitterParserError::MissingSymbol(identifier.to_string()))?;
-        Ok(Reference { id: Uuid::new_v4(), declaration_id, identifier })
+        Ok(Reference {
+            id: Uuid::new_v4(),
+            declaration_id,
+            identifier,
+        })
     }
 
     pub fn number_literal_from_tree_sitter_node(
@@ -285,7 +318,7 @@ impl<'a> TreeSitterParser<'a> {
         source_code: &str,
     ) -> NumberLiteral {
         let value = node.content(source_code);
-        NumberLiteral { 
+        NumberLiteral {
             id: Uuid::new_v4(),
             value,
         }
@@ -322,8 +355,8 @@ impl<'a> TreeSitterParser<'a> {
 
         Ok(IfStatement {
             id: Uuid::new_v4(),
-            condition: Box::new(condition),
-            compound_statement: code_block,
+            condition: Box::new(condition.try_into()?),
+            compound_statement: code_block.try_into()?, // TODO support other types of statements
             else_clause,
         })
     }
@@ -405,7 +438,7 @@ impl<'a> TreeSitterParser<'a> {
                 Ok(ElseClause {
                     id: Uuid::new_v4(),
                     condition: None,
-                    compound_statement: code_block,
+                    compound_statement: code_block.try_into()?, // TODO support other types of statements
                 })
             }
             "if_statement" => {
@@ -428,7 +461,7 @@ impl<'a> TreeSitterParser<'a> {
         source_code: &str,
     ) -> Comment {
         let content = node.content(source_code);
-        Comment { 
+        Comment {
             id: Uuid::new_v4(),
             content,
         }
@@ -442,7 +475,10 @@ impl<'a> TreeSitterParser<'a> {
         let identifier_node = node.child(0).unwrap();
         assert_eq!(identifier_node.kind(), "identifier");
         let identifier = identifier_node.content(source_code).to_string();
-        let id_declaration = self.context.get_symbol_id(&identifier, true).unwrap_or(Uuid::nil()); // TODO this symbols should be registered from imported libraries
+        let id_declaration = self
+            .context
+            .get_symbol_id(&identifier, true)
+            .unwrap_or(Uuid::nil()); // TODO this symbols should be registered from imported libraries
 
         // TODO check if this works and replace on function_declaration.rs
         let argument_list_node = node.child(1).unwrap();
@@ -470,7 +506,10 @@ impl<'a> TreeSitterParser<'a> {
             id: Uuid::new_v4(),
             id_declaration,
             identifier,
-            argument_list,
+            argument_list: argument_list
+                .into_iter()
+                .map(|e| e.try_into())
+                .collect::<Result<_, ConversionError>>()?,
         })
     }
 
@@ -490,9 +529,9 @@ impl<'a> TreeSitterParser<'a> {
             .unwrap();
         BinaryExpression {
             id: Uuid::new_v4(),
-            left: Box::new(left),
+            left: Box::new(left.try_into().unwrap()),
             operator,
-            right: Box::new(right),
+            right: Box::new(right.try_into().unwrap()),
         }
     }
 
@@ -512,7 +551,7 @@ impl<'a> TreeSitterParser<'a> {
             id: Uuid::new_v4(),
             id_declaration,
             identifier,
-            value: Box::new(value),
+            value: Box::new(value.try_into().unwrap()),
         }
     }
 

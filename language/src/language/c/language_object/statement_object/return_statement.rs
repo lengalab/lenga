@@ -1,19 +1,28 @@
 use uuid::Uuid;
 
 use crate::language::c::{
-    language_object::LanguageObject as CLanguageObject,
+    language_object::expression_object::ExpressionObject,
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct ReturnStatement {
     pub id: Uuid,
-    pub value: Box<CLanguageObject>,
+    pub value: Box<ExpressionObject>,
 }
 
 impl PartialEq for ReturnStatement {
     fn eq(&self, other: &Self) -> bool {
         crate::language::PartialEqAny::eq_dyn(&self.value, &other.value)
+    }
+}
+
+impl Default for ReturnStatement {
+    fn default() -> Self {
+        ReturnStatement {
+            id: Uuid::new_v4(),
+            value: Box::new(ExpressionObject::default()),
+        }
     }
 }
 

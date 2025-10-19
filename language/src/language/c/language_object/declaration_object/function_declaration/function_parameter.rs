@@ -1,11 +1,11 @@
 use uuid::Uuid;
 
 use crate::language::c::{
-    object_types::c_type::CType,
+    c_type::CType,
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct FunctionParameter {
     pub id: Uuid,
     pub identifier: String,
@@ -21,5 +21,15 @@ impl PartialEq for FunctionParameter {
 impl FunctionParameter {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
         todo!()
+    }
+}
+
+impl Default for FunctionParameter {
+    fn default() -> Self {
+        FunctionParameter {
+            id: Uuid::new_v4(),
+            identifier: String::new(),
+            param_type: CType::Void,
+        }
     }
 }
