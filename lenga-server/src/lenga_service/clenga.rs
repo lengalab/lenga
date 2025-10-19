@@ -132,20 +132,22 @@ impl CLenga for CLengaService {
         match files.get_mut(&req.path) {
             Some(file_ast) => {
                 let node_id = Uuid::parse_str(&req.node_id).unwrap();
-                if let Some(parent) = find_node(file_ast, node_id) {
-                    let options = parent.get_options(&req.node_key);
-                    let mapped_option = options
-                        .into_iter()
-                        .map(c_language_object_to_proto)
-                        .collect();
-                    Ok(Response::new(InsertOptions {
-                        options: mapped_option,
-                    }))
-                } else {
-                    panic!() //TODO: Return a error status code if the node could not be replaced
-                }
+                let parent = find_node(file_ast, node_id).ok_or_else(|| {
+                    Status::failed_precondition(format!(
+                        "Matching objects with id {} not found",
+                        node_id
+                    ))
+                })?;
+                let options = parent.get_options(&req.node_key);
+                let mapped_option = options
+                    .into_iter()
+                    .map(c_language_object_to_proto)
+                    .collect();
+                Ok(Response::new(InsertOptions {
+                    options: mapped_option,
+                }))
             }
-            None => panic!(), //TODO: Send a error status code if the file is not found
+            None => Err(Status::not_found(format!("File not found: {}", req.path))),
         }
     }
 
