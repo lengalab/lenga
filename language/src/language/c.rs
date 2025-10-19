@@ -8,7 +8,7 @@ use crate::language::{
     Language,
     c::{
         language_object::{
-            LanguageObject as CLanguageObject, compound_statement::CompoundStatement,
+            LanguageObject as CLanguageObject,
             source_file::SourceFile as CSourceFile,
         },
         parsers::{nodes::NodeParser, text::TreeSitterParser},
@@ -20,6 +20,7 @@ use crate::language::{
     },
 };
 use tree_sitter::Parser;
+use uuid::Uuid;
 
 pub mod object_types;
 
@@ -62,7 +63,10 @@ impl Language for C {
         let objects: Vec<CLanguageObject> =
             TreeSitterParser::parse_with_tree(root_node.child(0).unwrap(), source_code)?;
 
-        return Ok(CSourceFile { code: objects });
+        return Ok(CSourceFile {
+            id: Uuid::new_v4(),
+            code: objects,
+        });
     }
 
     fn parse_nodes(&self, nodes: Vec<u8>) -> Result<Self::SourceFile, String> {
@@ -141,10 +145,9 @@ mod tests {
             binary_expression::BinaryExpression,
             call_expression::CallExpression,
             comment::Comment,
-            compound_statement::{self, CompoundStatement},
+            compound_statement::CompoundStatement,
             declaration::Declaration,
             else_clause::ElseClause,
-            expression_statement::ExpressionStatement,
             function_declaration::FunctionDeclaration,
             function_definition::FunctionDefinition,
             function_parameter::FunctionParameter,
@@ -176,7 +179,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -336,10 +339,10 @@ int main() {
         match src_file.code.as_slice() {
             [
                 CLanguageObject::Comment(Comment {
-                    content: line_comment,
+                    content: line_comment, ..
                 }),
                 CLanguageObject::FunctionDefinition(FunctionDefinition {
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -347,7 +350,7 @@ int main() {
                 match code_block.as_slice() {
                     [
                         CLanguageObject::Comment(Comment {
-                            content: block_comment,
+                            content: block_comment, ..
                         }),
                     ] => {
                         assert_eq!(block_comment, "/*\n     This is a block comment\n   */");
@@ -379,7 +382,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -405,12 +408,14 @@ int main() {
                         assert_eq!(
                             a_value,
                             &Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
-                                value: "5".to_string()
+                                id: Uuid::new_v4(),
+                                value: "5".to_string(),
                             }))
                         );
                         assert_eq!(
                             b_value,
                             &Box::new(CLanguageObject::StringLiteral(StringLiteral {
+                                id: Uuid::new_v4(),
                                 value: "Hello, World!\\n".to_string()
                             }))
                         );
@@ -441,7 +446,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, ..},
                     ..
                 }),
             ] => {
@@ -485,7 +490,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -500,9 +505,10 @@ int main() {
                             value: None,
                         }),
                         CLanguageObject::AssignmentExpression(AssignmentExpression {
-                            id: assignment_id,
+                            id_declaration: assignment_id,
                             identifier: a_assignment_identifier,
                             value: a_assignment_value,
+                            ..
                         }),
                     ] => {
                         assert_eq!(a_identifier, "a");
@@ -511,6 +517,7 @@ int main() {
                         assert_eq!(
                             a_assignment_value,
                             &Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                id: Uuid::new_v4(),
                                 value: "5".to_string()
                             }))
                         );
@@ -601,7 +608,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] if *identifier == "main".to_string() && *parameter_list == vec![] => {
@@ -627,27 +634,29 @@ int main() {
                         }),
                         CLanguageObject::CompoundStatement(CompoundStatement {
                             code_block: inner_scope,
+                            ..
                         }),
                     ] if a_declaration_identifier == "a"
                         && b_declaration_identifier == "b"
                         && c_declaration_identifier == "c" =>
                     {
                         match a_declaration_value.as_ref() {
-                            CLanguageObject::NumberLiteral(NumberLiteral { value })
+                            CLanguageObject::NumberLiteral(NumberLiteral { value, .. })
                                 if value == "1" => {}
                             _ => panic!(),
                         }
                         match b_declaration_value.as_ref() {
-                            CLanguageObject::NumberLiteral(NumberLiteral { value })
+                            CLanguageObject::NumberLiteral(NumberLiteral { value, .. })
                                 if value == "2" => {}
                             _ => panic!(),
                         }
                         match inner_scope.as_slice() {
                             [
                                 CLanguageObject::AssignmentExpression(AssignmentExpression {
-                                    id: b_assignment_id,
+                                    id_declaration: b_assignment_id,
                                     identifier: b_assignment_identifier,
                                     value: b_assignment_value,
+                                    ..
                                 }),
                                 CLanguageObject::Declaration(Declaration {
                                     id: inner_a_declaration_id,
@@ -656,16 +665,17 @@ int main() {
                                     value: Some(inner_a_declaration_value),
                                 }),
                                 CLanguageObject::AssignmentExpression(AssignmentExpression {
-                                    id: c_assignment_id,
+                                    id_declaration: c_assignment_id,
                                     identifier: c_assignment_identifier,
                                     value: c_assignment_value,
+                                    ..
                                 }),
                             ] => {
                                 assert_eq!(b_assignment_identifier, "b");
                                 assert_eq!(b_assignment_id, b_declaration_id);
                                 match b_assignment_value.as_ref() {
-                                    CLanguageObject::Reference(Reference { identifier, id })
-                                        if identifier == "a" && id == a_declaration_id => {}
+                                    CLanguageObject::Reference(Reference { identifier, declaration_id, .. })
+                                        if identifier == "a" && declaration_id == a_declaration_id => {}
                                     _ => panic!(),
                                 }
 
@@ -674,7 +684,7 @@ int main() {
                                 assert_eq!(c_assignment_id, c_declaration_id);
                                 assert_ne!(a_declaration_id, inner_a_declaration_id);
                                 match inner_a_declaration_value.as_ref() {
-                                    CLanguageObject::NumberLiteral(NumberLiteral { value })
+                                    CLanguageObject::NumberLiteral(NumberLiteral { value, .. })
                                         if value == "3" => {}
                                     _ => panic!(),
                                 }
@@ -683,20 +693,23 @@ int main() {
                                         left,
                                         operator,
                                         right,
+                                        ..
                                     }) if *operator == "+" => {
                                         match left.as_ref() {
                                             CLanguageObject::Reference(Reference {
                                                 identifier,
-                                                id,
+                                                declaration_id,
+                                                ..
                                             }) if identifier == "a"
-                                                && id == inner_a_declaration_id => {}
+                                                && declaration_id == inner_a_declaration_id => {}
                                             _ => panic!(),
                                         }
                                         match right.as_ref() {
                                             CLanguageObject::Reference(Reference {
                                                 identifier,
-                                                id,
-                                            }) if identifier == "b" && id == b_declaration_id => {}
+                                                declaration_id,
+                                                ..
+                                            }) if identifier == "b" && declaration_id == b_declaration_id => {}
                                             _ => panic!(),
                                         }
                                     }
@@ -727,6 +740,7 @@ int main() {
 
         let expected: Vec<CLanguageObject> =
             vec![CLanguageObject::PreprocInclude(PreprocInclude {
+                id: Uuid::new_v4(),
                 content: "<stdio.h>".to_string(),
             })];
         assert_eq!(src_file.code, expected);
@@ -752,7 +766,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -781,10 +795,10 @@ int main() {
                         assert_eq!(param_c_identifier, "c");
 
                         match code_block.as_slice() {
-                            [CLanguageObject::ReturnStatement(ReturnStatement { value })] => {
+                            [CLanguageObject::ReturnStatement(ReturnStatement { value, .. })] => {
                                 match &**value {
-                                    CLanguageObject::Reference(Reference { id, identifier }) => {
-                                        assert_eq!(id, param_a_id);
+                                    CLanguageObject::Reference(Reference { declaration_id, identifier , ..}) => {
+                                        assert_eq!(declaration_id, param_a_id);
                                         assert_eq!(identifier, "a");
                                     }
                                     _ => {
@@ -830,7 +844,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -849,16 +863,17 @@ int main() {
                         assert_eq!(result_identifier, "result");
                         match value.as_ref() {
                             CLanguageObject::CallExpression(CallExpression {
-                                id: call_id,
+                                id_declaration: call_id,
                                 identifier: call_identifier,
                                 argument_list,
+                                ..
                             }) => {
                                 assert_eq!(call_identifier, "first");
                                 assert_eq!(call_id, first_id);
                                 match argument_list.as_slice() {
                                     [
-                                        CLanguageObject::NumberLiteral(NumberLiteral { value: a }),
-                                        CLanguageObject::NumberLiteral(NumberLiteral { value: b }),
+                                        CLanguageObject::NumberLiteral(NumberLiteral { value: a, .. }),
+                                        CLanguageObject::NumberLiteral(NumberLiteral { value: b, .. }),
                                     ] => {
                                         assert_eq!(a, "1");
                                         assert_eq!(b, "2");
@@ -899,7 +914,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -908,14 +923,15 @@ int main() {
                 match code_block.as_slice() {
                     [
                         CLanguageObject::CallExpression(CallExpression {
-                            id: _, // TODO verify id with id assigned to stdlib function
+                            id: _,
+                            id_declaration: _, // TODO verify id with id assigned to stdlib function
                             identifier: call_identifier,
                             argument_list,
                         }),
                     ] => {
                         assert_eq!(call_identifier, "printf");
                         match argument_list.as_slice() {
-                            [CLanguageObject::StringLiteral(StringLiteral { value })]
+                            [CLanguageObject::StringLiteral(StringLiteral { value, .. })]
                                 if value == "Hello, World!\\n" => {}
                             _ => {
                                 panic!("AST did not match expected function call argument list")
@@ -952,56 +968,74 @@ int main() {
 
         let code: Vec<CLanguageObject> = vec![
             CLanguageObject::BinaryExpression(BinaryExpression {
+                id: Uuid::new_v4(),
                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "1".to_string(),
                 })),
                 operator: "==".to_string(),
                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "2".to_string(),
                 })),
             }),
             CLanguageObject::BinaryExpression(BinaryExpression {
+                id: Uuid::new_v4(),
                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "1".to_string(),
                 })),
                 operator: "<".to_string(),
                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "2".to_string(),
                 })),
             }),
             CLanguageObject::BinaryExpression(BinaryExpression {
+                id: Uuid::new_v4(),
                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "1".to_string(),
                 })),
                 operator: ">".to_string(),
                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "2".to_string(),
                 })),
             }),
             CLanguageObject::BinaryExpression(BinaryExpression {
+                id: Uuid::new_v4(),
                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "1".to_string(),
                 })),
                 operator: "!=".to_string(),
                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "2".to_string(),
                 })),
             }),
             CLanguageObject::BinaryExpression(BinaryExpression {
+                id: Uuid::new_v4(),
                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "1".to_string(),
                 })),
                 operator: "<=".to_string(),
                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "2".to_string(),
                 })),
             }),
             CLanguageObject::BinaryExpression(BinaryExpression {
+                id: Uuid::new_v4(),
                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "1".to_string(),
                 })),
                 operator: ">=".to_string(),
                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                    id: Uuid::new_v4(),
                     value: "2".to_string(),
                 })),
             }),
@@ -1013,7 +1047,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -1046,7 +1080,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -1056,18 +1090,22 @@ int main() {
                     [
                         CLanguageObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: CompoundStatement { code_block },
+                            compound_statement: CompoundStatement { code_block, .. },
                             else_clause: None,
+                            ..
                         }),
                     ] => {
                         assert_eq!(
                             condition.as_ref(),
                             &CLanguageObject::BinaryExpression(BinaryExpression {
+                                id: Uuid::new_v4(),
                                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "5".to_string(),
                                 })),
                                 operator: ">".to_string(),
                                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "0".to_string(),
                                 })),
                             })
@@ -1116,7 +1154,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -1126,25 +1164,31 @@ int main() {
                     [
                         CLanguageObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: CompoundStatement { code_block },
+                            compound_statement: CompoundStatement { code_block, .. },
                             else_clause:
                                 Some(ElseClause {
                                     condition: None,
                                     compound_statement:
                                         CompoundStatement {
                                             code_block: else_code_block,
+                                            ..
                                         },
+                                    ..
                                 }),
+                            ..
                         }),
                     ] => {
                         assert_eq!(
                             condition.as_ref(),
                             &CLanguageObject::BinaryExpression(BinaryExpression {
+                                id: Uuid::new_v4(),
                                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "5".to_string(),
                                 })),
                                 operator: ">".to_string(),
                                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "0".to_string(),
                                 })),
                             })
@@ -1206,7 +1250,7 @@ int main() {
                     return_type: CType::Int,
                     identifier,
                     parameter_list,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -1216,25 +1260,31 @@ int main() {
                     [
                         CLanguageObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: CompoundStatement { code_block },
+                            compound_statement: CompoundStatement { code_block, .. },
                             else_clause:
                                 Some(ElseClause {
                                     condition: Some(else_condition),
                                     compound_statement:
                                         CompoundStatement {
                                             code_block: else_code_block,
+                                            ..
                                         },
+                                    ..
                                 }),
+                            ..
                         }),
                     ] => {
                         assert_eq!(
                             condition.as_ref(),
                             &CLanguageObject::BinaryExpression(BinaryExpression {
+                                id: Uuid::new_v4(),
                                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "5".to_string(),
                                 })),
                                 operator: ">".to_string(),
                                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "0".to_string(),
                                 })),
                             })
@@ -1255,11 +1305,14 @@ int main() {
                         assert_eq!(
                             else_condition.as_ref(),
                             &CLanguageObject::BinaryExpression(BinaryExpression {
+                                id: Uuid::new_v4(),
                                 left: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "5".to_string(),
                                 })),
                                 operator: "<".to_string(),
                                 right: Box::new(CLanguageObject::NumberLiteral(NumberLiteral {
+                                    id: Uuid::new_v4(),
                                     value: "0".to_string(),
                                 })),
                             })
@@ -1303,7 +1356,7 @@ int main() {
                 CLanguageObject::FunctionDefinition(FunctionDefinition {
                     id: definition_id,
                     identifier: definition_indentifier,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -1313,14 +1366,15 @@ int main() {
                     [
                         CLanguageObject::ReturnStatement(ReturnStatement {
                             value: return_value,
+                            ..
                         }),
                     ] => match return_value.as_ref() {
                         CLanguageObject::CallExpression(CallExpression {
-                            id: call_id,
+                            id_declaration,
                             identifier: call_identifier,
                             ..
                         }) => {
-                            assert_eq!(call_id, definition_id);
+                            assert_eq!(id_declaration, definition_id);
                             assert_eq!(call_identifier, "test");
                         }
                         _ => panic!("AST did not match expected return statement"),
@@ -1351,7 +1405,7 @@ int main() {
                 CLanguageObject::FunctionDefinition(FunctionDefinition {
                     id: function_id,
                     identifier: function_identifier,
-                    compound_statement: CompoundStatement { code_block },
+                    compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
             ] => {
@@ -1366,13 +1420,14 @@ int main() {
                         }),
                         CLanguageObject::ReturnStatement(ReturnStatement {
                             value: return_value,
+                            ..
                         }),
                     ] => {
                         assert_eq!(variable_identifier, "test");
                         assert_ne!(variable_id, function_id);
                         match return_value.as_ref() {
-                            CLanguageObject::Reference(Reference { id, identifier }) => {
-                                assert_eq!(id, variable_id);
+                            CLanguageObject::Reference(Reference { declaration_id, identifier, .. }) => {
+                                assert_eq!(declaration_id, variable_id);
                                 assert_eq!(identifier, "test");
                             }
                             _ => panic!("AST did not match expected return statement value"),

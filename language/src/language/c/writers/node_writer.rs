@@ -5,7 +5,7 @@ use uuid::Uuid;
 
 use crate::language::c::language_object::compound_statement::CompoundStatement;
 use crate::language::c::language_object::function_declaration::FunctionDeclaration;
-use crate::language::c::language_object::source_file::{self, SourceFile};
+use crate::language::c::language_object::source_file::SourceFile;
 use crate::language::c::language_object::{
     LanguageObject as CLanguageObject, assignment_expression::AssignmentExpression,
     binary_expression::BinaryExpression, call_expression::CallExpression, comment::Comment,
@@ -104,7 +104,7 @@ impl<'a> Cursor for NodeCursor<'a> {
         self.nodes.push(Node {
             id: assignment_expression.id,
             node_type: NodeType::AssignmentExpression.as_u64(),
-            content: assignment_expression.identifier.clone(),
+            content: assignment_expression.id_declaration.to_string(),
             tags: HashMap::new(),
             children: self.to_node(&assignment_expression.value)?,
         });
@@ -134,12 +134,9 @@ impl<'a> Cursor for NodeCursor<'a> {
         self.nodes.push(Node {
             id: call_expression.id,
             node_type: NodeType::CallExpression.as_u64(),
-            content: if self
-                .context
-                .get_symbol_identifier(&call_expression.id)
-                .is_some()
+            content: if call_expression.id_declaration != Uuid::nil()
             {
-                "".to_string()
+                call_expression.id_declaration.to_string()
             } else {
                 call_expression.identifier.clone()
             }, // TODO we won't need to save this when we figure out importing symbols from libraries
@@ -391,7 +388,7 @@ impl<'a> Cursor for NodeCursor<'a> {
     fn write_reference(&mut self, reference: &Reference) -> Result<(), WriterError> {
         let value = Node {
             id: reference.id,
-            content: "".to_string(),
+            content: reference.declaration_id.to_string(),
             node_type: NodeType::Reference.as_u64(),
             tags: HashMap::new(),
             children: vec![],

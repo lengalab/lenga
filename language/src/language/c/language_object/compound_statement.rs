@@ -1,18 +1,13 @@
-use std::any::Any;
+use uuid::Uuid;
 
-use crate::language::{
-    LanguageObject,
-    c::{
-        C, TreeSitterNodeExt,
-        language_object::LanguageObject as CLanguageObject,
-        language_object::else_clause::ElseClause,
-        writers::Writer,
-        writers::{Cursor, writer_error::WriterError},
-    },
+use crate::language::c::{
+    language_object::LanguageObject as CLanguageObject,
+    writers::{Cursor, writer_error::WriterError},
 };
 
 #[derive(Debug, Clone)]
 pub struct CompoundStatement {
+    pub id: Uuid,
     pub code_block: Vec<CLanguageObject>,
 }
 

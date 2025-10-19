@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::language::c::{
     language_object::{
         LanguageObject as CLanguageObject, compound_statement::CompoundStatement,
@@ -8,6 +10,7 @@ use crate::language::c::{
 
 #[derive(Debug, Clone)]
 pub struct IfStatement {
+    pub id: Uuid,
     pub condition: Box<CLanguageObject>,
     pub compound_statement: CompoundStatement,
     pub else_clause: Option<ElseClause>,

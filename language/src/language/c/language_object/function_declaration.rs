@@ -1,19 +1,13 @@
-use std::any::Any;
-
 use uuid::Uuid;
 
 use crate::{
-    language::{
-        LanguageObject,
-        c::{
-            C,
-            language_object::{
-                LanguageObject as CLanguageObject, function_parameter::FunctionParameter,
-            },
-            object_types::c_type::CType,
-            writers::{Cursor, Writer, writer_error::WriterError},
+    language::c::{
+        language_object::{
+            LanguageObject as CLanguageObject, function_parameter::FunctionParameter,
         },
-    },
+        object_types::c_type::CType,
+        writers::{Cursor, writer_error::WriterError},
+        },
     node::Node,
 };
 

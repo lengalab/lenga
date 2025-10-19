@@ -1,16 +1,13 @@
-use std::any::Any;
+use uuid::Uuid;
 
-use crate::language::{
-    LanguageObject,
-    c::{
-        C,
-        language_object::LanguageObject as CLanguageObject,
-        writers::{Cursor, writer_error::WriterError},
-    },
+use crate::language::c::{
+    language_object::LanguageObject as CLanguageObject,
+    writers::{Cursor, writer_error::WriterError},
 };
 
 #[derive(Debug, Clone)]
 pub struct ReturnStatement {
+    pub id: Uuid,
     pub value: Box<CLanguageObject>,
 }
 

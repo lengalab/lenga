@@ -11,6 +11,7 @@ use crate::language::c::{
 /// ```
 pub struct AssignmentExpression {
     pub id: Uuid,
+    pub id_declaration: Uuid,
     pub identifier: String,
     pub value: Box<CLanguageObject>,
 }
