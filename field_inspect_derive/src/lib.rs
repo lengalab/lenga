@@ -62,7 +62,6 @@ pub fn derive_variant_provider(input: TokenStream) -> TokenStream {
         .iter()
         .map(|variant| {
             let variant_name = &variant.ident;
-            
             // Check if variant has fields
             match &variant.fields {
                 Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
@@ -234,7 +233,6 @@ pub fn derive_field_inspect(input: TokenStream) -> TokenStream {
                 .iter()
                 .map(|variant| {
                     let variant_name = &variant.ident;
-                    
                     match &variant.fields {
                         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
                             // Single-field tuple variant (e.g., IfStatement(IfStatement))

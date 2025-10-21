@@ -653,7 +653,6 @@ fn c_compound_statement_object_to_proto(
                 )),
             }
         },
-                
     }
 }
 
