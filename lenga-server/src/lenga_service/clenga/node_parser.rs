@@ -720,12 +720,14 @@ mod tests {
                 id,
                 id_declaration,
                 identifier: identifier.to_string(),
-                value: Box::new(c::language_object::expression_object::ExpressionObject::NumberLiteral(
-                    c::language_object::expression_object::number_literal::NumberLiteral {
-                        id: number_id,
-                        value: value.to_string(),
-                    },
-                )),
+                value: Box::new(
+                    c::language_object::expression_object::ExpressionObject::NumberLiteral(
+                        c::language_object::expression_object::number_literal::NumberLiteral {
+                            id: number_id,
+                            value: value.to_string(),
+                        },
+                    ),
+                ),
             };
         let proto_assignment = assignment_expression_to_proto(assignment);
 
@@ -757,19 +759,23 @@ mod tests {
         let operator = "+";
         let bin = c::language_object::expression_object::binary_expression::BinaryExpression {
             id,
-            left: Box::new(c::language_object::expression_object::ExpressionObject::NumberLiteral(
-                c::language_object::expression_object::number_literal::NumberLiteral {
-                    id: left_id,
-                    value: left_value.to_string(),
-                },
-            )),
+            left: Box::new(
+                c::language_object::expression_object::ExpressionObject::NumberLiteral(
+                    c::language_object::expression_object::number_literal::NumberLiteral {
+                        id: left_id,
+                        value: left_value.to_string(),
+                    },
+                ),
+            ),
             operator: operator.to_string(),
-            right: Box::new(c::language_object::expression_object::ExpressionObject::NumberLiteral(
-                c::language_object::expression_object::number_literal::NumberLiteral {
-                    id: right_id,
-                    value: right_value.to_string(),
-                },
-            )),
+            right: Box::new(
+                c::language_object::expression_object::ExpressionObject::NumberLiteral(
+                    c::language_object::expression_object::number_literal::NumberLiteral {
+                        id: right_id,
+                        value: right_value.to_string(),
+                    },
+                ),
+            ),
         };
         let proto_bin = binary_expression_to_proto(bin);
 
@@ -808,7 +814,12 @@ mod tests {
         let call_identifier = "foo";
         let param_id = Uuid::new_v4();
         let param_value = "42".to_string();
-        let param = c::language_object::expression_object::ExpressionObject::NumberLiteral(c::language_object::expression_object::number_literal::NumberLiteral{ id: param_id, value: param_value.clone() }) ;
+        let param = c::language_object::expression_object::ExpressionObject::NumberLiteral(
+            c::language_object::expression_object::number_literal::NumberLiteral {
+                id: param_id,
+                value: param_value.clone(),
+            },
+        );
         let call = c::language_object::expression_object::call_expression::CallExpression {
             id: id,
             id_declaration: decl_id,
@@ -860,9 +871,11 @@ mod tests {
             id,
             primitive_type: primitive_type.clone(),
             identifier: identifier.to_string(),
-            value: Some(Box::new(c::language_object::expression_object::ExpressionObject::NumberLiteral(
-                number_literal,
-            ))),
+            value: Some(Box::new(
+                c::language_object::expression_object::ExpressionObject::NumberLiteral(
+                    number_literal,
+                ),
+            )),
         };
         let proto_declaration = declaration_to_proto(declaration);
 
@@ -897,15 +910,22 @@ mod tests {
             c::language_object::statement_object::if_statement::else_clause::ElseClause {
                 id,
                 condition: None,
-                compound_statement: Box::new(c::language_object::statement_object::StatementObject::CompoundStatement(
-                    compound_statement,
-                )),
+                compound_statement: Box::new(
+                    c::language_object::statement_object::StatementObject::CompoundStatement(
+                        compound_statement,
+                    ),
+                ),
             };
         let proto_else = else_clause_to_proto(else_clause);
 
         assert_eq!(proto_else.id, id.to_string());
         assert!(proto_else.condition.is_none());
-        match proto_else.compound_statement.unwrap().statement_object.unwrap() {
+        match proto_else
+            .compound_statement
+            .unwrap()
+            .statement_object
+            .unwrap()
+        {
             proto::statement_object::StatementObject::CompoundStatement(compound_statement) => {
                 assert_eq!(compound_statement.id, comp_id.to_string());
                 assert_eq!(compound_statement.code_block.len(), 0);
@@ -1019,11 +1039,12 @@ mod tests {
 
         let comp_id = Uuid::new_v4();
         let id = Uuid::new_v4();
-        let compound_statement = c::language_object::statement_object::StatementObject::CompoundStatement(
+        let compound_statement =
+            c::language_object::statement_object::StatementObject::CompoundStatement(
                 c::language_object::statement_object::compound_statement::CompoundStatement {
-                id: comp_id,
-                code_block: vec![],
-            },
+                    id: comp_id,
+                    code_block: vec![],
+                },
             );
         let if_stmt = c::language_object::statement_object::if_statement::IfStatement {
             id,
@@ -1035,17 +1056,27 @@ mod tests {
         let proto_if = if_statement_to_proto(if_stmt);
         assert_eq!(proto_if.id, id.to_string());
 
-            match &proto_if.condition.expect("expected Some(condition)").expression_object.unwrap() {
-                proto::expression_object::ExpressionObject::NumberLiteral(proto_num) => {
-                    assert_eq!(proto_num.id, cond_id.to_string());
-                    assert_eq!(proto_num.value, cond_value);
-                }
-                _ => panic!("expected NumberLiteral in condition"),
+        match &proto_if
+            .condition
+            .expect("expected Some(condition)")
+            .expression_object
+            .unwrap()
+        {
+            proto::expression_object::ExpressionObject::NumberLiteral(proto_num) => {
+                assert_eq!(proto_num.id, cond_id.to_string());
+                assert_eq!(proto_num.value, cond_value);
             }
+            _ => panic!("expected NumberLiteral in condition"),
+        }
 
         // compound_statement should be present
-        match proto_if.compound_statement.unwrap().statement_object.unwrap() {
-            proto::statement_object::StatementObject::CompoundStatement(compound_statement) =>  {
+        match proto_if
+            .compound_statement
+            .unwrap()
+            .statement_object
+            .unwrap()
+        {
+            proto::statement_object::StatementObject::CompoundStatement(compound_statement) => {
                 assert_eq!(compound_statement.id, comp_id.to_string());
                 assert!(compound_statement.code_block.is_empty());
             }
@@ -1106,24 +1137,31 @@ mod tests {
         let value = "42";
         let ret = c::language_object::statement_object::return_statement::ReturnStatement {
             id,
-            value: Box::new(c::language_object::expression_object::ExpressionObject::NumberLiteral(
-                c::language_object::expression_object::number_literal::NumberLiteral {
-                    id: value_id,
-                    value: value.to_string(),
-                },
-            )),
+            value: Box::new(
+                c::language_object::expression_object::ExpressionObject::NumberLiteral(
+                    c::language_object::expression_object::number_literal::NumberLiteral {
+                        id: value_id,
+                        value: value.to_string(),
+                    },
+                ),
+            ),
         };
 
         let proto_ret = return_statement_to_proto(ret);
         assert_eq!(proto_ret.id, id.to_string());
 
-            match proto_ret.value.expect("expected some").expression_object.unwrap() {
-                proto::expression_object::ExpressionObject::NumberLiteral(proto_number) => {
-                    assert_eq!(proto_number.id, value_id.to_string());
-                    assert_eq!(proto_number.value, value);
-                }
-                _ => panic!("expected Some(NumberLiteral)"),
+        match proto_ret
+            .value
+            .expect("expected some")
+            .expression_object
+            .unwrap()
+        {
+            proto::expression_object::ExpressionObject::NumberLiteral(proto_number) => {
+                assert_eq!(proto_number.id, value_id.to_string());
+                assert_eq!(proto_number.value, value);
             }
+            _ => panic!("expected Some(NumberLiteral)"),
+        }
     }
 
     #[test]
@@ -1158,7 +1196,11 @@ mod tests {
         assert_eq!(proto_comp.id, comp_id.to_string());
         assert_eq!(proto_comp.code_block.len(), 1);
 
-        match proto_comp.code_block[0].compound_statement_object.as_ref().unwrap() {
+        match proto_comp.code_block[0]
+            .compound_statement_object
+            .as_ref()
+            .unwrap()
+        {
             proto::compound_statement_object::CompoundStatementObject::Comment(proto_comment) => {
                 assert_eq!(proto_comment.id, comment_id.to_string());
                 assert_eq!(proto_comment.content, "ok");
