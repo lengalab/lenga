@@ -1,0 +1,25 @@
+name: Rust Format Check
+
+on:
+    pull_request:
+        branches:
+            - "**"
+    push:
+        branches:
+            - main
+
+jobs:
+    fmt:
+        name: Check code formatting
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v5
+
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@stable
+              with:
+                  components: rustfmt
+
+            - name: Check formatting
+              run: cargo fmt --all -- --check
