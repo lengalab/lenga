@@ -485,7 +485,7 @@ mod tests {
                 id: func_decl_id,
                 return_type: func_decl_return_type,
                 identifier: func_decl_identifier.to_string(),
-                parameter_list: vec![param]
+                parameter_list: vec![param],
             };
 
         let src_file_id = Uuid::new_v4();
@@ -547,7 +547,7 @@ mod tests {
                 id: func_decl_id,
                 return_type: func_decl_return_type.clone(),
                 identifier: func_decl_identifier.to_string(),
-                parameter_list: vec![param]
+                parameter_list: vec![param],
             };
 
         let src_file_id = Uuid::new_v4();
@@ -566,8 +566,9 @@ mod tests {
                 id: func_decl_id,
                 return_type: func_decl_return_type,
                 identifier: func_decl_identifier.to_string(),
-                parameter_list: vec![]
-            });
+                parameter_list: vec![],
+            },
+        );
 
         let mut code = c::language_object::LanguageObject::SourceFile(src_file);
         let replaced_object = replace_object(&mut code, replace);
@@ -575,7 +576,9 @@ mod tests {
         assert!(replaced_object.is_some());
         match code {
             c::language_object::LanguageObject::SourceFile(src) => match &src.code[1] {
-                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(func) => {
+                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(
+                    func,
+                ) => {
                     assert_eq!(func.parameter_list.len(), 0);
                 }
                 _ => panic!("Expected a CompoundStatement"),
@@ -613,7 +616,7 @@ mod tests {
                 id: func_decl_id,
                 return_type: func_decl_return_type.clone(),
                 identifier: func_decl_identifier.to_string(),
-                parameter_list: vec![param]
+                parameter_list: vec![param],
             };
 
         let src_file_id = Uuid::new_v4();
@@ -683,7 +686,7 @@ mod tests {
                 id: func_decl_id,
                 return_type: func_decl_return_type.clone(),
                 identifier: func_decl_identifier.to_string(),
-                parameter_list: vec![param]
+                parameter_list: vec![param],
             };
 
         let src_file_id = Uuid::new_v4();
@@ -691,7 +694,9 @@ mod tests {
             id: src_file_id,
             code: vec![
                 c::language_object::declaration_object::DeclarationObject::Declaration(decl),
-                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(func_decl),
+                c::language_object::declaration_object::DeclarationObject::FunctionDeclaration(
+                    func_decl,
+                ),
             ],
         };
 

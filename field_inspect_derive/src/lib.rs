@@ -1,6 +1,8 @@
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, GenericArgument, PathArguments, Type, parse_macro_input, DataEnum};
+use syn::{
+    Data, DataEnum, DeriveInput, Fields, GenericArgument, PathArguments, Type, parse_macro_input,
+};
 
 /// Derive macro for VariantProvider trait
 ///
@@ -60,7 +62,6 @@ pub fn derive_variant_provider(input: TokenStream) -> TokenStream {
         .iter()
         .map(|variant| {
             let variant_name = &variant.ident;
-            
             // Check if variant has fields
             match &variant.fields {
                 Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
@@ -102,7 +103,6 @@ pub fn derive_variant_provider(input: TokenStream) -> TokenStream {
 
     expanded.into()
 }
-
 
 /// Derive macro for FieldInspect trait
 ///
@@ -233,7 +233,6 @@ pub fn derive_field_inspect(input: TokenStream) -> TokenStream {
                 .iter()
                 .map(|variant| {
                     let variant_name = &variant.ident;
-                    
                     match &variant.fields {
                         Fields::Unnamed(fields) if fields.unnamed.len() == 1 => {
                             // Single-field tuple variant (e.g., IfStatement(IfStatement))
@@ -306,26 +305,18 @@ fn get_language_object_variants(ty: &Type) -> Option<proc_macro2::TokenStream> {
             let ident_str = segment.ident.to_string();
 
             return match ident_str.as_str() {
-                "StatementObject" => {
-                    Some(quote! {
-                        crate::language::c::language_object::statement_object::StatementObject::get_variants_as_language_objects()
-                    })
-                }
-                "ExpressionObject" => {
-                    Some(quote! {
-                        crate::language::c::language_object::expression_object::ExpressionObject::get_variants_as_language_objects()
-                    })
-                }
-                "CompoundStatementObject" => {
-                    Some(quote! {
-                        crate::language::c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::get_variants_as_language_objects()
-                    })
-                }
-                "DeclarationObject" => {
-                    Some(quote! {
-                        crate::language::c::language_object::declaration_object::DeclarationObject::get_variants_as_language_objects()
-                    })
-                }
+                "StatementObject" => Some(quote! {
+                    crate::language::c::language_object::statement_object::StatementObject::get_variants_as_language_objects()
+                }),
+                "ExpressionObject" => Some(quote! {
+                    crate::language::c::language_object::expression_object::ExpressionObject::get_variants_as_language_objects()
+                }),
+                "CompoundStatementObject" => Some(quote! {
+                    crate::language::c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::get_variants_as_language_objects()
+                }),
+                "DeclarationObject" => Some(quote! {
+                    crate::language::c::language_object::declaration_object::DeclarationObject::get_variants_as_language_objects()
+                }),
                 _ => None,
             };
         }
