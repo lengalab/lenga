@@ -496,7 +496,7 @@ fn if_statement_to_c_object(
             id,
             condition: Box::new(condition),
             compound_statement: Box::new(compound_statement),
-            else_clause,
+            else_statement: else_clause,
         },
     )
 }
@@ -1178,7 +1178,7 @@ mod tests {
             }
             _ => panic!("expected compound statement"),
         }
-        let else_clause = c_if.else_clause.unwrap();
+        let else_clause = c_if.else_statement.unwrap();
         match *else_clause.compound_statement {
             statement_object::StatementObject::CompoundStatement(
                 else_clause_compound_statement,

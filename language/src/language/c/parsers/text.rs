@@ -23,7 +23,7 @@ use crate::{
             statement_object::{
                 StatementObject,
                 compound_statement::CompoundStatement,
-                if_statement::{IfStatement, else_clause::ElseClause},
+                if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
                 return_statement::ReturnStatement,
             },
         },
@@ -357,7 +357,7 @@ impl<'a> TreeSitterParser<'a> {
             id: Uuid::new_v4(),
             condition: Box::new(condition.try_into()?),
             compound_statement: code_block.try_into()?, // TODO support other types of statements
-            else_clause,
+            else_statement: else_clause,
         })
     }
 
@@ -425,7 +425,7 @@ impl<'a> TreeSitterParser<'a> {
         &mut self,
         node: tree_sitter::Node<'_>,
         source_code: &str,
-    ) -> Result<ElseClause, TreeSitterParserError> {
+    ) -> Result<ElseStatement, TreeSitterParserError> {
         assert_eq!(node.child(0).unwrap().kind(), "else");
         let compound_statement = node.child(1).unwrap();
         match compound_statement.kind() {
@@ -435,21 +435,21 @@ impl<'a> TreeSitterParser<'a> {
                     source_code,
                 )?;
 
-                Ok(ElseClause {
+                Ok(ElseStatement::ElseClause(Box::new(ElseClause {
                     id: Uuid::new_v4(),
-                    condition: None,
                     compound_statement: code_block.try_into()?, // TODO support other types of statements
-                })
+                })))
             }
             "if_statement" => {
                 let if_statement =
                     self.if_statement_from_tree_sitter_node(compound_statement, source_code)?;
 
-                Ok(ElseClause {
+                Ok(ElseStatement::ElseIf(Box::new(IfStatement {
                     id: Uuid::new_v4(),
-                    condition: Some(if_statement.condition),
+                    condition: if_statement.condition,
                     compound_statement: if_statement.compound_statement,
-                })
+                    else_statement: if_statement.else_statement,
+                })))
             }
             other => panic!("Unexpected node kind: {}", other),
         }

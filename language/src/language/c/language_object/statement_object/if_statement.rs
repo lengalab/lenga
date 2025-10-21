@@ -11,11 +11,29 @@ use crate::language::c::{
 };
 
 #[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+pub enum ElseStatement {
+    ElseIf(Box<IfStatement>),
+    ElseClause(Box<ElseClause>),
+}
+
+impl ElseStatement {
+    pub fn write(
+        &self,
+        w: &mut dyn crate::language::c::writers::Cursor,
+    ) -> Result<(), crate::language::c::writers::writer_error::WriterError> {
+        match self {
+            ElseStatement::ElseIf(stmt) => stmt.write(w),
+            ElseStatement::ElseClause(stmt) => stmt.write(w),
+        }
+    }
+}
+
+#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct IfStatement {
     pub id: Uuid,
     pub condition: Box<ExpressionObject>,
     pub compound_statement: Box<StatementObject>,
-    pub else_clause: Option<ElseClause>,
+    pub else_statement: Option<ElseStatement>,
 }
 
 impl IfStatement {
@@ -30,7 +48,7 @@ impl Default for IfStatement {
             id: Uuid::new_v4(),
             condition: Box::new(ExpressionObject::default()),
             compound_statement: Box::new(StatementObject::default()),
-            else_clause: None,
+            else_statement: None,
         }
     }
 }
@@ -42,6 +60,16 @@ impl PartialEq for IfStatement {
                 &self.compound_statement,
                 &other.compound_statement,
             )
-            && self.else_clause == other.else_clause
+            && self.else_statement == other.else_statement
+    }
+}
+
+impl PartialEq for ElseStatement {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (ElseStatement::ElseIf(a), ElseStatement::ElseIf(b)) => a == b,
+            (ElseStatement::ElseClause(a), ElseStatement::ElseClause(b)) => a == b,
+            _ => false,
+        }
     }
 }

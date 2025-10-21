@@ -333,7 +333,7 @@ fn replace_if_statement(
         {
             return Some(found);
         }
-        if let Some(else_clause) = &mut stmt.else_clause {
+        if let Some(else_clause) = &mut stmt.else_statement {
             if let Some(found) = replace_else_clause(else_clause, new_object) {
                 return Some(found);
             }

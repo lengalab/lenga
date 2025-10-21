@@ -19,7 +19,7 @@ use crate::language::c::language_object::{
     special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
     statement_object::{
         compound_statement::CompoundStatement,
-        if_statement::{IfStatement, else_clause::ElseClause},
+        if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
         return_statement::ReturnStatement,
     },
 };
@@ -207,20 +207,11 @@ impl<'a> Cursor for NodeCursor<'a> {
     }
 
     fn write_else_clause(&mut self, else_clause: &ElseClause) -> Result<(), WriterError> {
-        let mut tags: HashMap<String, Vec<Node>> = HashMap::new();
-
-        if let Some(condition) = &else_clause.condition {
-            tags.insert(
-                "condition".to_string(),
-                self.to_node(&condition.as_language_object())
-                    .unwrap_or(vec![]),
-            );
-        };
         self.nodes.push(Node {
             id: Uuid::new_v4(),
             node_type: NodeType::ElseClause.as_u64(),
             content: "".to_string(),
-            tags,
+            tags: HashMap::new(),
             children: {
                 let mut branch = self.branch();
                 else_clause.compound_statement.write(&mut branch)?;
@@ -357,11 +348,21 @@ impl<'a> Cursor for NodeCursor<'a> {
         )]
         .to_tags();
 
-        if let Some(else_clause) = &if_statement.else_clause {
-            tags.insert(
-                "else_clause".to_string(),
-                self.to_node(&CLanguageObject::ElseClause(else_clause.clone()))?,
-            );
+        if let Some(else_clause) = &if_statement.else_statement {
+            match else_clause {
+                ElseStatement::ElseIf(else_if) => {
+                    tags.insert(
+                        "else_if".to_string(),
+                        self.to_node(&CLanguageObject::IfStatement(*else_if.clone()))?,
+                    );
+                }
+                ElseStatement::ElseClause(else_clause) => {
+                    tags.insert(
+                        "else_clause".to_string(),
+                        self.to_node(&CLanguageObject::ElseClause(*else_clause.clone()))?,
+                    );
+                }
+            }
         };
         self.nodes.push(Node {
             id: Uuid::new_v4(),

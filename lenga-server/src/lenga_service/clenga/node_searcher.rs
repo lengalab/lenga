@@ -253,7 +253,7 @@ fn search_if_statement(
     if let Some(found) = search_statement_object(&stmt.compound_statement, id) {
         return Some(found);
     }
-    if let Some(else_clause) = &stmt.else_clause {
+    if let Some(else_clause) = &stmt.else_statement {
         if let Some(found) = search_else_clause(else_clause, id) {
             return Some(found);
         }

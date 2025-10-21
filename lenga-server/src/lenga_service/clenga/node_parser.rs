@@ -481,7 +481,7 @@ fn if_statement_to_proto(
     let condition = c_expression_object_to_proto(*if_statement.condition);
     let compound_statement = c_statement_object_to_proto(*if_statement.compound_statement);
     let else_clause = if_statement
-        .else_clause
+        .else_statement
         .map(|else_clause| Box::new(else_clause_to_proto(else_clause)));
 
     proto::IfStatement {
@@ -1049,7 +1049,7 @@ mod tests {
             id,
             condition: Box::new(cond),
             compound_statement: Box::new(compound_statement),
-            else_clause: None,
+            else_statement: None,
         };
 
         let proto_if = if_statement_to_proto(if_stmt);
