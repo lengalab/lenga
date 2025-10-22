@@ -333,9 +333,23 @@ fn replace_if_statement(
         {
             return Some(found);
         }
-        if let Some(else_clause) = &mut stmt.else_statement {
-            if let Some(found) = replace_else_clause(else_clause, new_object) {
-                return Some(found);
+        if let Some(else_statement) = &stmt.else_statement {
+            match else_statement.clone() {
+                language_object::statement_object::if_statement::ElseStatement::ElseIf(
+                    mut if_statement,
+                ) => {
+                    if let Some(found) = replace_if_statement(&mut if_statement, new_object.clone())
+                    {
+                        return Some(found);
+                    }
+                }
+                language_object::statement_object::if_statement::ElseStatement::ElseClause(
+                    mut else_clause,
+                ) => {
+                    if let Some(found) = replace_else_clause(&mut else_clause, new_object.clone()) {
+                        return Some(found);
+                    }
+                }
             }
         }
     }

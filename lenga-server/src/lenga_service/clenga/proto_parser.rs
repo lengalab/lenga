@@ -327,11 +327,6 @@ fn else_clause_to_c_object(
     let id = Uuid::parse_str(&else_clause.id)
         .map_err(|_| "object id could not be parsed".to_string())?;
 
-    let condition = else_clause
-        .condition
-        .map(|c| proto_to_c_expression_object(c).map(Box::new))
-        .transpose()?;
-
     let compound_statementt = else_clause
         .compound_statement
         .ok_or("else clause without compound_statement attribute")?;
@@ -340,7 +335,6 @@ fn else_clause_to_c_object(
     Ok(
         c::language_object::statement_object::if_statement::else_clause::ElseClause {
             id,
-            condition,
             compound_statement: Box::new(compound_statement),
         },
     )
@@ -486,17 +480,26 @@ fn if_statement_to_c_object(
             .ok_or("if statement without compound_statement attribute")?,
     )?;
 
-    let else_clause = if_statement
-        .else_clause
-        .map(|e| else_clause_to_c_object(*e))
-        .transpose()?;
+    let else_statement = match if_statement.else_statement {
+        Some(proto::if_statement::ElseStatement::ElseClause(else_clause)) => Some(
+            c::language_object::statement_object::if_statement::ElseStatement::ElseClause(
+                Box::new(else_clause_to_c_object(*else_clause)?),
+            ),
+        ),
+        Some(proto::if_statement::ElseStatement::ElseIf(else_if)) => Some(
+            c::language_object::statement_object::if_statement::ElseStatement::ElseIf(Box::new(
+                if_statement_to_c_object(*else_if)?,
+            )),
+        ),
+        None => None,
+    };
 
     Ok(
         c::language_object::statement_object::if_statement::IfStatement {
             id,
             condition: Box::new(condition),
             compound_statement: Box::new(compound_statement),
-            else_statement: else_clause,
+            else_statement,
         },
     )
 }
@@ -961,13 +964,11 @@ mod tests {
         let id = Uuid::new_v4();
         let else_clause = proto::ElseClause {
             id: id.to_string(),
-            condition: None,
             compound_statement: Some(Box::new(comp_stmt)),
         };
         let c_else = else_clause_to_c_object(else_clause).unwrap();
 
         assert_eq!(c_else.id, id);
-        assert!(c_else.condition.is_none());
         match &*c_else.compound_statement {
             statement_object::StatementObject::CompoundStatement(c_else_compound_statement) => {
                 assert_eq!(c_else_compound_statement.id, stmt_id);
@@ -1142,7 +1143,6 @@ mod tests {
         };
         let else_clause = proto::ElseClause {
             id: Uuid::new_v4().to_string(),
-            condition: None,
             compound_statement: Some(Box::new(else_compound)),
         };
 
@@ -1151,7 +1151,9 @@ mod tests {
             id: id.to_string(),
             condition: Some(condition),
             compound_statement: Some(Box::new(then_stmt)),
-            else_clause: Some(Box::new(else_clause)),
+            else_statement: Some(proto::if_statement::ElseStatement::ElseClause(Box::new(
+                else_clause,
+            ))),
         };
         let c_if = if_statement_to_c_object(if_stmt).unwrap();
 
@@ -1178,8 +1180,11 @@ mod tests {
             }
             _ => panic!("expected compound statement"),
         }
-        let else_clause = c_if.else_statement.unwrap();
-        match *else_clause.compound_statement {
+        let language::language::c::language_object::statement_object::if_statement::ElseStatement::ElseClause(
+            else_statement) = c_if.else_statement.unwrap() else{
+                        panic!("expected ElseClause")
+            };
+        match *else_statement.compound_statement {
             statement_object::StatementObject::CompoundStatement(
                 else_clause_compound_statement,
             ) => {

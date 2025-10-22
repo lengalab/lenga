@@ -373,14 +373,10 @@ fn declaration_to_proto(
 fn else_clause_to_proto(
     else_clause: c::language_object::statement_object::if_statement::else_clause::ElseClause,
 ) -> proto::ElseClause {
-    let condition = else_clause
-        .condition
-        .map(|condition| c_expression_object_to_proto(*condition));
     let compound_statement = c_statement_object_to_proto(*else_clause.compound_statement);
 
     proto::ElseClause {
         id: else_clause.id.to_string(),
-        condition: condition,
         compound_statement: Some(Box::new(compound_statement)),
     }
 }
@@ -480,15 +476,26 @@ fn if_statement_to_proto(
 ) -> proto::IfStatement {
     let condition = c_expression_object_to_proto(*if_statement.condition);
     let compound_statement = c_statement_object_to_proto(*if_statement.compound_statement);
-    let else_clause = if_statement
+    let else_statement = if_statement
         .else_statement
-        .map(|else_clause| Box::new(else_clause_to_proto(else_clause)));
+        .map(|else_statement| match else_statement {
+            c::language_object::statement_object::if_statement::ElseStatement::ElseIf(
+                if_statement,
+            ) => proto::if_statement::ElseStatement::ElseIf(Box::new(if_statement_to_proto(
+                *if_statement,
+            ))),
+            c::language_object::statement_object::if_statement::ElseStatement::ElseClause(
+                else_clause,
+            ) => proto::if_statement::ElseStatement::ElseClause(Box::new(else_clause_to_proto(
+                *else_clause,
+            ))),
+        });
 
     proto::IfStatement {
         id: if_statement.id.to_string(),
         condition: Some(condition),
         compound_statement: Some(Box::new(compound_statement)),
-        else_clause: else_clause,
+        else_statement,
     }
 }
 
@@ -908,7 +915,6 @@ mod tests {
         let else_clause =
             c::language_object::statement_object::if_statement::else_clause::ElseClause {
                 id,
-                condition: None,
                 compound_statement: Box::new(
                     c::language_object::statement_object::StatementObject::CompoundStatement(
                         compound_statement,
@@ -918,7 +924,6 @@ mod tests {
         let proto_else = else_clause_to_proto(else_clause);
 
         assert_eq!(proto_else.id, id.to_string());
-        assert!(proto_else.condition.is_none());
         match proto_else
             .compound_statement
             .unwrap()
@@ -1083,7 +1088,6 @@ mod tests {
         }
 
         // else_clause should be None
-        assert!(proto_if.else_clause.is_none());
     }
 
     #[test]
