@@ -285,12 +285,18 @@ impl<'a> TreeSitterParser<'a> {
         source_code: &str,
     ) -> Result<ReturnStatement, TreeSitterParserError> {
         assert_eq!(node.child(0).unwrap().kind(), "return");
-        let value = self
-            .object_from_tree_sitter_node(node.child(1).unwrap(), source_code)
-            .unwrap();
+        let child = node.child(1).unwrap();
+        let value: Option<ExpressionObject> = match child.kind() {
+            ";" => None,
+            _ => Some(
+                self.object_from_tree_sitter_node(child, source_code)
+                    .unwrap()
+                    .try_into()?,
+            ),
+        };
         Ok(ReturnStatement {
             id: Uuid::new_v4(),
-            value: Box::new(value.try_into()?),
+            value,
         })
     }
 

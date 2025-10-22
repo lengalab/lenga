@@ -8,7 +8,7 @@ use crate::language::c::{
 #[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
 pub struct ReturnStatement {
     pub id: Uuid,
-    pub value: Box<ExpressionObject>,
+    pub value: Option<ExpressionObject>,
 }
 
 impl PartialEq for ReturnStatement {
@@ -21,7 +21,7 @@ impl Default for ReturnStatement {
     fn default() -> Self {
         ReturnStatement {
             id: Uuid::new_v4(),
-            value: Box::new(ExpressionObject::default()),
+            value: None,
         }
     }
 }

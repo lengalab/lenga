@@ -184,7 +184,7 @@ message Reference {
 
 message ReturnStatement {
   string id = 1;
-  ExpressionObject value = 2;
+  optional ExpressionObject value = 2;
 }
 
 message StringLiteral {

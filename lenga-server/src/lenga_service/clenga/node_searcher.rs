@@ -291,5 +291,8 @@ fn search_return_statement(
     if stmt.id == id {
         return Some(LanguageObject::ReturnStatement(stmt.clone()));
     }
-    search_expression_object(&stmt.value, id)
+    match &stmt.value {
+        None => None,
+        Some(value) => search_expression_object(value, id),
+    }
 }

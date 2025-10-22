@@ -406,7 +406,10 @@ fn replace_return_statement(
                 stmt, new_stmt,
             )));
         }
-    } else if let Some(found) = replace_expression_object(&mut stmt.value, new_object) {
+    } else if let Some(found) = match &mut stmt.value {
+        Some(value) => replace_expression_object(value, new_object),
+        None => None,
+    } {
         return Some(found);
     }
     None

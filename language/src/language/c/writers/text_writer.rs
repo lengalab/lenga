@@ -331,8 +331,17 @@ impl<'a> Cursor for TextWriter<'a> {
         &mut self,
         return_statement: &ReturnStatement,
     ) -> Result<(), WriterError> {
-        self.write("return ")?;
-        return_statement.value.write(self)?;
+        self.write("return")?;
+        match &return_statement.value {
+            Some(value) => {
+                self.write(" ")?;
+                value.write(self)?;
+            }
+            None => {
+                self.writeln("return")?;
+                return Ok(());
+            }
+        }
         Ok(())
     }
 

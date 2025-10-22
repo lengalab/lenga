@@ -299,6 +299,39 @@ int main() {}
     }
 
     #[test]
+    fn test_parse_empty_function_definition_empty_return() {
+        let c_code = "
+void do() {
+    return;
+}
+";
+        let c_language = C::new();
+        let src_file = c_language.parse_text(c_code).unwrap();
+
+        match src_file.code.as_slice() {
+            [
+                DeclarationObject::FunctionDefinition(FunctionDefinition {
+                    identifier,
+                    compound_statement,
+                    ..
+                }),
+            ] => {
+                assert_eq!(identifier, "do");
+                match compound_statement.code_block.as_slice() {
+                    [CompoundStatementObject::ReturnStatement(return_statement)] => {
+                        assert!(return_statement.value.is_none());
+                    }
+                    _ => panic!("AST did not match expected empty function body"),
+                }
+            }
+            _ => panic!("AST did not match expected function declaration"),
+        }
+        let nodes = c_language.write_to_nodes(src_file.clone()).unwrap();
+        let parsed_objects = c_language.parse_nodes(nodes).unwrap();
+        assert_eq!(src_file, parsed_objects);
+    }
+
+    #[test]
     fn test_parse_function_declaration_and_definition() {
         let c_code = "
 int main();
@@ -815,10 +848,10 @@ int main() {
                         match code_block.as_slice() {
                             [
                                 CompoundStatementObject::ReturnStatement(ReturnStatement {
-                                    value,
+                                    value: Some(value),
                                     ..
                                 }),
-                            ] => match &**value {
+                            ] => match &*value {
                                 ExpressionObject::Reference(Reference {
                                     declaration_id,
                                     identifier,
@@ -1589,7 +1622,7 @@ int main() {
                             value: return_value,
                             ..
                         }),
-                    ] => match return_value.as_ref() {
+                    ] => match return_value.as_ref().unwrap() {
                         ExpressionObject::CallExpression(CallExpression {
                             id_declaration,
                             identifier: call_identifier,
@@ -1646,7 +1679,7 @@ int main() {
                     ] => {
                         assert_eq!(variable_identifier, "test");
                         assert_ne!(variable_id, function_id);
-                        match return_value.as_ref() {
+                        match return_value.as_ref().unwrap() {
                             ExpressionObject::Reference(Reference {
                                 declaration_id,
                                 identifier,

@@ -555,18 +555,12 @@ fn return_statement_to_c_object(
 ) -> Result<c::language_object::statement_object::return_statement::ReturnStatement, String> {
     let id = Uuid::parse_str(&return_statement.id)
         .map_err(|_| "object id could not be parsed".to_string())?;
+    let value = match return_statement.value {
+        Some(value) => Some(expression_object_to_c_language_object(value)?),
+        None => None,
+    };
 
-    let proto_msg = return_statement
-        .value
-        .ok_or("return statement without value attribute")?;
-    let value = expression_object_to_c_language_object(proto_msg)?; //TODO: This should be able to be an Option
-
-    Ok(
-        c::language_object::statement_object::return_statement::ReturnStatement {
-            id,
-            value: Box::new(value),
-        },
-    )
+    Ok(c::language_object::statement_object::return_statement::ReturnStatement { id, value })
 }
 
 fn expression_object_to_c_language_object(
@@ -1267,7 +1261,7 @@ mod tests {
         let c_ret = return_statement_to_c_object(proto_ret).unwrap();
 
         assert_eq!(c_ret.id, id);
-        match *c_ret.value {
+        match c_ret.value.unwrap() {
             c::language_object::expression_object::ExpressionObject::NumberLiteral(ref c_num) => {
                 assert_eq!(c_num.id, num_id);
                 assert_eq!(c_num.value, val);

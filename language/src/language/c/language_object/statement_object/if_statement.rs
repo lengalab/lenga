@@ -4,6 +4,7 @@ pub mod else_clause;
 
 use crate::language::c::{
     language_object::{
+        LanguageObject,
         expression_object::ExpressionObject,
         statement_object::{StatementObject, if_statement::else_clause::ElseClause},
     },
@@ -24,6 +25,29 @@ impl ElseStatement {
         match self {
             ElseStatement::ElseIf(stmt) => stmt.write(w),
             ElseStatement::ElseClause(stmt) => stmt.write(w),
+        }
+    }
+}
+
+impl From<ElseStatement> for LanguageObject {
+    fn from(else_statement: ElseStatement) -> Self {
+        match else_statement {
+            ElseStatement::ElseIf(stmt) => LanguageObject::IfStatement(*stmt),
+            ElseStatement::ElseClause(stmt) => LanguageObject::ElseClause(*stmt),
+        }
+    }
+}
+
+impl TryFrom<LanguageObject> for ElseStatement {
+    type Error = crate::language::c::language_object::ConversionError;
+
+    fn try_from(else_statement: LanguageObject) -> Result<Self, Self::Error> {
+        match else_statement {
+            LanguageObject::IfStatement(stmt) => Ok(ElseStatement::ElseIf(Box::new(stmt))),
+            LanguageObject::ElseClause(stmt) => Ok(ElseStatement::ElseClause(Box::new(stmt))),
+            _ => Err(crate::language::c::language_object::ConversionError(
+                "Cannot convert LanguageObject to ElseStatement".into(),
+            )),
         }
     }
 }

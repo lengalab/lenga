@@ -423,7 +423,10 @@ impl<'a> Cursor for NodeCursor<'a> {
             id: Uuid::new_v4(),
             tags: HashMap::new(),
             content: "".to_string(),
-            children: self.to_node(&return_statement.value.as_language_object())?,
+            children: match &return_statement.value {
+                Some(value) => self.to_node(&value.as_language_object())?,
+                None => vec![],
+            },
         });
         Ok(())
     }

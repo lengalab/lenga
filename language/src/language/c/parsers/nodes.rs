@@ -406,7 +406,11 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::ReturnStatement.as_u64());
         Ok(ReturnStatement {
             id: node.id,
-            value: self.unpack_parse(node.children)?.try_into()?,
+            value: if node.children.is_empty() {
+                None
+            } else {
+                Some((*self.unpack_parse(node.children)?).try_into()?)
+            },
         })
     }
 

@@ -530,11 +530,14 @@ fn reference_to_proto(
 fn return_statement_to_proto(
     return_statement: c::language_object::statement_object::return_statement::ReturnStatement,
 ) -> proto::ReturnStatement {
-    let value = c_expression_object_to_proto(*return_statement.value);
+    let value = match return_statement.value {
+        Some(value) => Some(c_expression_object_to_proto(value)),
+        None => None,
+    };
 
     proto::ReturnStatement {
         id: return_statement.id.to_string(),
-        value: Some(value),
+        value,
     }
 }
 
@@ -1140,7 +1143,7 @@ mod tests {
         let value = "42";
         let ret = c::language_object::statement_object::return_statement::ReturnStatement {
             id,
-            value: Box::new(
+            value: Some(
                 c::language_object::expression_object::ExpressionObject::NumberLiteral(
                     c::language_object::expression_object::number_literal::NumberLiteral {
                         id: value_id,
