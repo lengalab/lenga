@@ -1589,6 +1589,99 @@ int main() {
     }
 
     #[test]
+    fn test_parse_if_statement_one_line() {
+        let c_code = r#"
+                int main() {
+                    if (5 > 0)
+                        1;
+                    else if (5 < 0)
+                        2;
+                    else
+                        3;
+                }
+                "#;
+        let c_language = C::new();
+        let src_file = c_language.parse_text(c_code).unwrap();
+
+        match src_file.code.as_slice() {
+            [
+                DeclarationObject::FunctionDefinition(FunctionDefinition {
+                    return_type: CType::Int,
+                    identifier,
+                    parameter_list,
+                    compound_statement: CompoundStatement { code_block, .. },
+                    ..
+                }),
+            ] => {
+                assert_eq!(identifier, "main");
+                assert!(parameter_list.is_empty());
+                match code_block.as_slice() {
+                    [
+                        CompoundStatementObject::IfStatement(IfStatement {
+                            condition,
+                            body,
+                            else_statement: Some(ElseStatement::ElseIf(else_if)),
+                            ..
+                        }),
+                    ] => match *(*body).clone() {
+                        CompoundStatementObject::NumberLiteral(NumberLiteral { value, .. }) => {
+                            assert_eq!(
+                                condition.as_ref(),
+                                &ExpressionObject::BinaryExpression(BinaryExpression {
+                                    id: Uuid::new_v4(),
+                                    left: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "5".to_string(),
+                                        }
+                                    )),
+                                    operator: ">".to_string(),
+                                    right: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "0".to_string(),
+                                        }
+                                    )),
+                                })
+                            );
+                            assert_eq!(value, "1".to_string());
+                            match *(*else_if).body.clone() {
+                                CompoundStatementObject::NumberLiteral(NumberLiteral {
+                                    value: else_value,
+                                    ..
+                                }) => {
+                                    assert_eq!(else_value, "2".to_string());
+                                }
+                                _ => panic!("AST did not match expected else statement body"),
+                            }
+                            match &else_if.else_statement {
+                                Some(ElseStatement::ElseClause(else_clause)) => {
+                                    match *(*else_clause).body.clone() {
+                                        CompoundStatementObject::NumberLiteral(NumberLiteral {
+                                            value: else_else_value,
+                                            ..
+                                        }) => {
+                                            assert_eq!(else_else_value, "3".to_string());
+                                        }
+                                        _ => panic!("AST did not match expected else clause body"),
+                                    }
+                                }
+                                _ => panic!("AST did not match expected else if else statement"),
+                            }
+                        }
+                        _ => panic!("AST did not match expected if statement body"),
+                    },
+                    _ => panic!("AST did not match expected if statement"),
+                }
+            }
+            _ => panic!("AST did not match expected function definition"),
+        }
+        let nodes = c_language.write_to_nodes(src_file.clone()).unwrap();
+        let parsed_objects = c_language.parse_nodes(nodes).unwrap();
+        assert_eq!(src_file, parsed_objects);
+    }
+
+    #[test]
     fn test_parse_recursive_function() {
         let c_code = r#"
         int test(int a) {
