@@ -249,8 +249,7 @@ fn replace_else_clause(
                 new_else,
             )));
         }
-    } else if let Some(found) =
-        replace_statement_object(&mut else_clause.compound_statement, new_object)
+    } else if let Some(found) = replace_compound_statement_object(&mut else_clause.body, new_object)
     {
         return Some(found);
     }
@@ -328,9 +327,7 @@ fn replace_if_statement(
         if let Some(found) = replace_expression_object(&mut stmt.condition, new_object.clone()) {
             return Some(found);
         }
-        if let Some(found) =
-            replace_statement_object(&mut stmt.compound_statement, new_object.clone())
-        {
+        if let Some(found) = replace_compound_statement_object(&mut stmt.body, new_object.clone()) {
             return Some(found);
         }
         if let Some(else_statement) = &stmt.else_statement {

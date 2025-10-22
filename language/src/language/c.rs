@@ -1154,12 +1154,12 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement,
+                            body,
                             else_statement: None,
                             ..
                         }),
-                    ] => match *(*compound_statement).clone() {
-                        StatementObject::CompoundStatement(CompoundStatement {
+                    ] => match *(*body).clone() {
+                        CompoundStatementObject::CompoundStatement(CompoundStatement {
                             code_block: if_code_block,
                             ..
                         }) => {
@@ -1238,20 +1238,17 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: if_compound_statement,
+                            body: if_body,
                             else_statement: Some(ElseStatement::ElseClause(else_clause)),
                             ..
                         }),
-                    ] => match (
-                        *(*if_compound_statement).clone(),
-                        *(*else_clause).compound_statement.clone(),
-                    ) {
+                    ] => match (*(*if_body).clone(), *(*else_clause).body.clone()) {
                         (
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
                                 ..
                             }),
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block: else_code_block,
                                 ..
                             }),
@@ -1344,20 +1341,17 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: if_compound_statement,
+                            body: if_body,
                             else_statement: Some(ElseStatement::ElseIf(else_if)),
                             ..
                         }),
-                    ] => match (
-                        *(*if_compound_statement).clone(),
-                        *(*else_if).compound_statement.clone(),
-                    ) {
+                    ] => match (*(*if_body).clone(), *(*else_if).body.clone()) {
                         (
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
                                 ..
                             }),
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block: else_code_block,
                                 ..
                             }),
@@ -1472,20 +1466,17 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: if_compound_statement,
+                            body: if_body,
                             else_statement: Some(ElseStatement::ElseIf(else_if)),
                             ..
                         }),
-                    ] => match (
-                        *(*if_compound_statement).clone(),
-                        *(*else_if).compound_statement.clone(),
-                    ) {
+                    ] => match (*(*if_body).clone(), *(*else_if).body.clone()) {
                         (
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
                                 ..
                             }),
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block: else_if_code_block,
                                 ..
                             }),
@@ -1556,11 +1547,13 @@ int main() {
                             }
                             match &else_if.else_statement {
                                 Some(ElseStatement::ElseClause(else_clause)) => {
-                                    match *(*else_clause).compound_statement.clone() {
-                                        StatementObject::CompoundStatement(CompoundStatement {
-                                            code_block: else_code_block,
-                                            ..
-                                        }) => match else_code_block.as_slice() {
+                                    match *(*else_clause).body.clone() {
+                                        CompoundStatementObject::CompoundStatement(
+                                            CompoundStatement {
+                                                code_block: else_code_block,
+                                                ..
+                                            },
+                                        ) => match else_code_block.as_slice() {
                                             [
                                                 CompoundStatementObject::Declaration(Declaration {
                                                     primitive_type: CType::Int,

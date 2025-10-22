@@ -217,7 +217,7 @@ impl<'a> Cursor for TextWriter<'a> {
     fn write_else_clause(&mut self, else_clause: &ElseClause) -> Result<(), WriterError> {
         self.write(" else")?;
         self.write(" ")?;
-        else_clause.compound_statement.write(self)?;
+        else_clause.body.write(self)?;
         Ok(())
     }
 
@@ -301,7 +301,7 @@ impl<'a> Cursor for TextWriter<'a> {
 
         self.write(&format!(" "))?;
 
-        if_statement.compound_statement.write(self)?;
+        if_statement.body.write(self)?;
         if let Some(else_statement) = &if_statement.else_statement {
             else_statement.write(self)?
         }

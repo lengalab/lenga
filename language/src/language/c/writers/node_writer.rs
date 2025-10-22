@@ -214,7 +214,7 @@ impl<'a> Cursor for NodeCursor<'a> {
             tags: HashMap::new(),
             children: {
                 let mut branch = self.branch();
-                else_clause.compound_statement.write(&mut branch)?;
+                else_clause.body.write(&mut branch)?;
                 branch.nodes
             },
         });
@@ -371,7 +371,7 @@ impl<'a> Cursor for NodeCursor<'a> {
             tags,
             children: {
                 let mut branch = self.branch();
-                if_statement.compound_statement.write(&mut branch)?;
+                if_statement.body.write(&mut branch)?;
                 branch.nodes
             },
         });

@@ -6,7 +6,10 @@ use crate::language::c::{
     language_object::{
         LanguageObject,
         expression_object::ExpressionObject,
-        statement_object::{StatementObject, if_statement::else_clause::ElseClause},
+        statement_object::{
+            compound_statement::compound_statement_object::CompoundStatementObject,
+            if_statement::else_clause::ElseClause,
+        },
     },
     writers::{Cursor, writer_error::WriterError},
 };
@@ -56,7 +59,7 @@ impl TryFrom<LanguageObject> for ElseStatement {
 pub struct IfStatement {
     pub id: Uuid,
     pub condition: Box<ExpressionObject>,
-    pub compound_statement: Box<StatementObject>,
+    pub body: Box<CompoundStatementObject>,
     pub else_statement: Option<ElseStatement>,
 }
 
@@ -71,7 +74,7 @@ impl Default for IfStatement {
         IfStatement {
             id: Uuid::new_v4(),
             condition: Box::new(ExpressionObject::default()),
-            compound_statement: Box::new(StatementObject::default()),
+            body: Box::new(CompoundStatementObject::default()),
             else_statement: None,
         }
     }
@@ -80,10 +83,7 @@ impl Default for IfStatement {
 impl PartialEq for IfStatement {
     fn eq(&self, other: &Self) -> bool {
         crate::language::PartialEqAny::eq_dyn(&self.condition, &other.condition)
-            && crate::language::PartialEqAny::eq_dyn(
-                &self.compound_statement,
-                &other.compound_statement,
-            )
+            && crate::language::PartialEqAny::eq_dyn(&self.body, &other.body)
             && self.else_statement == other.else_statement
     }
 }

@@ -1,36 +1,30 @@
 use uuid::Uuid;
 
-use crate::{
-    language::c::{
-        c_type::CType,
-        language_object::{
-            ConversionError, LanguageObject as CLanguageObject,
-            declaration_object::{
-                DeclarationObject,
-                declaration::Declaration,
-                function_declaration::{
-                    FunctionDeclaration, function_parameter::FunctionParameter,
-                },
-                function_definition::FunctionDefinition,
-                preproc_include::PreprocInclude,
-            },
-            expression_object::{
-                ExpressionObject, assignment_expression::AssignmentExpression,
-                binary_expression::BinaryExpression, call_expression::CallExpression,
-                number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
-            },
-            special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
-            statement_object::{
-                StatementObject,
-                compound_statement::CompoundStatement,
-                if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
-                return_statement::ReturnStatement,
-            },
+use crate::language::c::{
+    c_type::CType,
+    language_object::{
+        ConversionError, LanguageObject as CLanguageObject,
+        declaration_object::{
+            declaration::Declaration,
+            function_declaration::{FunctionDeclaration, function_parameter::FunctionParameter},
+            function_definition::FunctionDefinition,
+            preproc_include::PreprocInclude,
         },
-        parsers::context::{Context, SymbolAlreadyExists},
-        writers::node_writer::node_type::NodeType,
+        expression_object::{
+            ExpressionObject, assignment_expression::AssignmentExpression,
+            binary_expression::BinaryExpression, call_expression::CallExpression,
+            number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
+        },
+        special_object::comment::Comment,
+        statement_object::{
+            compound_statement::{
+                CompoundStatement, compound_statement_object::CompoundStatementObject,
+            },
+            if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
+            return_statement::ReturnStatement,
+        },
     },
-    node::Node,
+    parsers::context::{Context, SymbolAlreadyExists},
 };
 
 use crate::language::c::TreeSitterNodeExt;
@@ -339,7 +333,7 @@ impl<'a> TreeSitterParser<'a> {
         let parenthesized_expression = node.child(1).unwrap();
         assert_eq!(parenthesized_expression.kind(), "parenthesized_expression");
         let compound_statement = node.child(2).unwrap();
-        assert_eq!(compound_statement.kind(), "compound_statement");
+        assert_eq!(compound_statement.kind(), "compound_statement"); // TODO support other types of statements
 
         assert_eq!(parenthesized_expression.child(0).unwrap().kind(), "(");
         let condition = self
@@ -351,6 +345,7 @@ impl<'a> TreeSitterParser<'a> {
             compound_statement.child(0).unwrap(),
             source_code,
         )?;
+        let body = CompoundStatementObject::CompoundStatement(code_block);
 
         let else_clause = if let Some(else_node) = node.child(3) {
             assert_eq!(else_node.kind(), "else_clause");
@@ -362,7 +357,7 @@ impl<'a> TreeSitterParser<'a> {
         Ok(IfStatement {
             id: Uuid::new_v4(),
             condition: Box::new(condition.try_into()?),
-            compound_statement: code_block.try_into()?, // TODO support other types of statements
+            body: Box::new(body),
             else_statement: else_clause,
         })
     }
@@ -440,10 +435,11 @@ impl<'a> TreeSitterParser<'a> {
                     compound_statement.child(0).unwrap(),
                     source_code,
                 )?;
+                let body = CompoundStatementObject::CompoundStatement(code_block);
 
                 Ok(ElseStatement::ElseClause(Box::new(ElseClause {
                     id: Uuid::new_v4(),
-                    compound_statement: code_block.try_into()?, // TODO support other types of statements
+                    body: Box::new(body), // TODO support other types of statements
                 })))
             }
             "if_statement" => {
@@ -453,7 +449,7 @@ impl<'a> TreeSitterParser<'a> {
                 Ok(ElseStatement::ElseIf(Box::new(IfStatement {
                     id: Uuid::new_v4(),
                     condition: if_statement.condition,
-                    compound_statement: if_statement.compound_statement,
+                    body: if_statement.body,
                     else_statement: if_statement.else_statement,
                 })))
             }

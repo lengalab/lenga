@@ -250,7 +250,7 @@ fn search_if_statement(
     if let Some(found) = search_expression_object(&stmt.condition, id) {
         return Some(found);
     }
-    if let Some(found) = search_statement_object(&stmt.compound_statement, id) {
+    if let Some(found) = search_compound_statement_object(&stmt.body, id) {
         return Some(found);
     }
     if let Some(else_statement) = &stmt.else_statement {
@@ -281,7 +281,7 @@ fn search_else_clause(
     if else_clause.id == id {
         return Some(LanguageObject::ElseClause(else_clause.clone()));
     }
-    search_statement_object(&else_clause.compound_statement, id)
+    search_compound_statement_object(&else_clause.body, id)
 }
 
 fn search_return_statement(

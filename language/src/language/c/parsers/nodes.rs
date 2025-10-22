@@ -247,9 +247,10 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::ElseClause.as_u64());
         Ok(ElseClause {
             id: node.id,
-            compound_statement: self
-                .compound_statement_from_node(node.children.pop().unwrap())?
-                .try_into()?,
+            body: Box::new(
+                self.clanguageobject_from_node(node.children.pop().unwrap())?
+                    .try_into()?,
+            ),
         })
     }
 
@@ -363,10 +364,11 @@ impl<'a> NodeParser<'a> {
             condition: self
                 .unpack_parse(node.tags.remove("condition").unwrap())?
                 .try_into()?,
-            compound_statement: self
-                .branch()
-                .compound_statement_from_node(node.children.pop().unwrap())?
-                .try_into()?,
+            body: Box::new(
+                self.branch()
+                    .clanguageobject_from_node(node.children.pop().unwrap())?
+                    .try_into()?,
+            ),
             else_statement,
         })
     }

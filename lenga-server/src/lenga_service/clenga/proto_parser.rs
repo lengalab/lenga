@@ -327,15 +327,15 @@ fn else_clause_to_c_object(
     let id = Uuid::parse_str(&else_clause.id)
         .map_err(|_| "object id could not be parsed".to_string())?;
 
-    let compound_statementt = else_clause
-        .compound_statement
+    let body = else_clause
+        .body
         .ok_or("else clause without compound_statement attribute")?;
-    let compound_statement = statement_object_to_c_object(*compound_statementt)?;
+    let compound_statement = compound_statement_object_to_c_object(*body)?;
 
     Ok(
         c::language_object::statement_object::if_statement::else_clause::ElseClause {
             id,
-            compound_statement: Box::new(compound_statement),
+            body: Box::new(compound_statement),
         },
     )
 }
@@ -354,7 +354,7 @@ fn statement_object_to_c_object(
         ),
         proto::statement_object::StatementObject::IfStatement(if_statement) => Ok(
             c::language_object::statement_object::StatementObject::IfStatement(
-                if_statement_to_c_object(*if_statement)?,
+                if_statement_to_c_object(if_statement)?,
             ),
         ),
         proto::statement_object::StatementObject::ReturnStatement(return_statement) => Ok(
@@ -474,9 +474,9 @@ fn if_statement_to_c_object(
             .ok_or("if statement  without condition attribute")?,
     )?;
 
-    let compound_statement = statement_object_to_c_object(
+    let body = compound_statement_object_to_c_object(
         *if_statement
-            .compound_statement
+            .body
             .ok_or("if statement without compound_statement attribute")?,
     )?;
 
@@ -498,7 +498,7 @@ fn if_statement_to_c_object(
         c::language_object::statement_object::if_statement::IfStatement {
             id,
             condition: Box::new(condition),
-            compound_statement: Box::new(compound_statement),
+            body: Box::new(body),
             else_statement,
         },
     )
@@ -689,7 +689,7 @@ fn compound_statement_object_to_c_object(statement: proto::CompoundStatementObje
             ),
             proto::compound_statement_object::CompoundStatementObject::IfStatement(if_statement) => Ok(
                 c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::IfStatement(
-                    if_statement_to_c_object(if_statement)?,
+                    if_statement_to_c_object(*if_statement)?,
                 ),
             ),
             proto::compound_statement_object::CompoundStatementObject::ReturnStatement(return_statement) => Ok(
@@ -946,25 +946,27 @@ mod tests {
                 proto::compound_statement_object::CompoundStatementObject::Comment(comment),
             ),
         };
-        let comp_stmt = proto::StatementObject {
-            statement_object: Some(proto::statement_object::StatementObject::CompoundStatement(
-                proto::CompoundStatement {
-                    id: stmt_id.to_string(),
-                    code_block: vec![stmt_comment],
-                },
-            )),
+        let comp_stmt = proto::CompoundStatementObject {
+            compound_statement_object: Some(
+                proto::compound_statement_object::CompoundStatementObject::CompoundStatement(
+                    proto::CompoundStatement {
+                        id: stmt_id.to_string(),
+                        code_block: vec![stmt_comment],
+                    },
+                ),
+            ),
         };
 
         let id = Uuid::new_v4();
         let else_clause = proto::ElseClause {
             id: id.to_string(),
-            compound_statement: Some(Box::new(comp_stmt)),
+            body: Some(Box::new(comp_stmt)),
         };
         let c_else = else_clause_to_c_object(else_clause).unwrap();
 
         assert_eq!(c_else.id, id);
-        match &*c_else.compound_statement {
-            statement_object::StatementObject::CompoundStatement(c_else_compound_statement) => {
+        match &*c_else.body {
+            statement_object::compound_statement::compound_statement_object::CompoundStatementObject::CompoundStatement(c_else_compound_statement) => {
                 assert_eq!(c_else_compound_statement.id, stmt_id);
                 match &c_else_compound_statement.code_block[0] {
                     c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::Comment(c_comment) => {
@@ -1105,13 +1107,15 @@ mod tests {
                 ),
             ),
         };
-        let then_stmt = proto::StatementObject {
-            statement_object: Some(proto::statement_object::StatementObject::CompoundStatement(
-                proto::CompoundStatement {
-                    id: then_id.to_string(),
-                    code_block: vec![then_comment],
-                },
-            )),
+        let then_stmt = proto::CompoundStatementObject {
+            compound_statement_object: Some(
+                proto::compound_statement_object::CompoundStatementObject::CompoundStatement(
+                    proto::CompoundStatement {
+                        id: then_id.to_string(),
+                        code_block: vec![then_comment],
+                    },
+                ),
+            ),
         };
 
         let else_id = Uuid::new_v4();
@@ -1127,24 +1131,26 @@ mod tests {
                 ),
             ),
         };
-        let else_compound = proto::StatementObject {
-            statement_object: Some(proto::statement_object::StatementObject::CompoundStatement(
-                proto::CompoundStatement {
-                    id: else_id.to_string(),
-                    code_block: vec![else_comment],
-                },
-            )),
+        let else_compound = proto::CompoundStatementObject {
+            compound_statement_object: Some(
+                proto::compound_statement_object::CompoundStatementObject::CompoundStatement(
+                    proto::CompoundStatement {
+                        id: else_id.to_string(),
+                        code_block: vec![else_comment],
+                    },
+                ),
+            ),
         };
         let else_clause = proto::ElseClause {
             id: Uuid::new_v4().to_string(),
-            compound_statement: Some(Box::new(else_compound)),
+            body: Some(Box::new(else_compound)),
         };
 
         let id = Uuid::new_v4();
         let if_stmt = proto::IfStatement {
             id: id.to_string(),
             condition: Some(condition),
-            compound_statement: Some(Box::new(then_stmt)),
+            body: Some(Box::new(then_stmt)),
             else_statement: Some(proto::if_statement::ElseStatement::ElseClause(Box::new(
                 else_clause,
             ))),
@@ -1159,8 +1165,8 @@ mod tests {
             }
             _ => panic!("expected NumberLiteral"),
         }
-        match *c_if.compound_statement {
-            c::language_object::statement_object::StatementObject::CompoundStatement(
+        match *c_if.body {
+            c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::CompoundStatement(
                 ref c_compound,
             ) => {
                 assert_eq!(c_compound.id, then_id);
@@ -1178,10 +1184,8 @@ mod tests {
             else_statement) = c_if.else_statement.unwrap() else{
                         panic!("expected ElseClause")
             };
-        match *else_statement.compound_statement {
-            statement_object::StatementObject::CompoundStatement(
-                else_clause_compound_statement,
-            ) => {
+        match *else_statement.body {
+            statement_object::compound_statement::compound_statement_object::CompoundStatementObject::CompoundStatement(else_clause_compound_statement) => {
                 assert_eq!(else_clause_compound_statement.id, else_id);
                 match &else_clause_compound_statement.code_block[0] {
                     c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::Comment(c_comment) => {
