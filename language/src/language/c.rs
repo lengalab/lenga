@@ -166,7 +166,7 @@ mod tests {
                 compound_statement::{
                     CompoundStatement, compound_statement_object::CompoundStatementObject,
                 },
-                if_statement::{IfStatement, else_clause::ElseClause},
+                if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
                 return_statement::ReturnStatement,
             },
         },
@@ -290,6 +290,39 @@ int main() {}
         match src_file.code.as_slice() {
             [DeclarationObject::FunctionDefinition(FunctionDefinition { identifier, .. })] => {
                 assert_eq!(identifier, "main");
+            }
+            _ => panic!("AST did not match expected function declaration"),
+        }
+        let nodes = c_language.write_to_nodes(src_file.clone()).unwrap();
+        let parsed_objects = c_language.parse_nodes(nodes).unwrap();
+        assert_eq!(src_file, parsed_objects);
+    }
+
+    #[test]
+    fn test_parse_empty_function_definition_empty_return() {
+        let c_code = "
+void do() {
+    return;
+}
+";
+        let c_language = C::new();
+        let src_file = c_language.parse_text(c_code).unwrap();
+
+        match src_file.code.as_slice() {
+            [
+                DeclarationObject::FunctionDefinition(FunctionDefinition {
+                    identifier,
+                    compound_statement,
+                    ..
+                }),
+            ] => {
+                assert_eq!(identifier, "do");
+                match compound_statement.code_block.as_slice() {
+                    [CompoundStatementObject::ReturnStatement(return_statement)] => {
+                        assert!(return_statement.value.is_none());
+                    }
+                    _ => panic!("AST did not match expected empty function body"),
+                }
             }
             _ => panic!("AST did not match expected function declaration"),
         }
@@ -815,10 +848,10 @@ int main() {
                         match code_block.as_slice() {
                             [
                                 CompoundStatementObject::ReturnStatement(ReturnStatement {
-                                    value,
+                                    value: Some(value),
                                     ..
                                 }),
-                            ] => match &**value {
+                            ] => match &*value {
                                 ExpressionObject::Reference(Reference {
                                     declaration_id,
                                     identifier,
@@ -1121,12 +1154,12 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement,
-                            else_clause: None,
+                            body,
+                            else_statement: None,
                             ..
                         }),
-                    ] => match *(*compound_statement).clone() {
-                        StatementObject::CompoundStatement(CompoundStatement {
+                    ] => match *(*body).clone() {
+                        CompoundStatementObject::CompoundStatement(CompoundStatement {
                             code_block: if_code_block,
                             ..
                         }) => {
@@ -1205,25 +1238,17 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: if_compound_statement,
-                            else_clause:
-                                Some(ElseClause {
-                                    condition: None,
-                                    compound_statement: else_compound_statement,
-                                    ..
-                                }),
+                            body: if_body,
+                            else_statement: Some(ElseStatement::ElseClause(else_clause)),
                             ..
                         }),
-                    ] => match (
-                        *(*if_compound_statement).clone(),
-                        *(*else_compound_statement).clone(),
-                    ) {
+                    ] => match (*(*if_body).clone(), *(*else_clause).body.clone()) {
                         (
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
                                 ..
                             }),
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block: else_code_block,
                                 ..
                             }),
@@ -1316,29 +1341,22 @@ int main() {
                     [
                         CompoundStatementObject::IfStatement(IfStatement {
                             condition,
-                            compound_statement: if_compound_statement,
-                            else_clause:
-                                Some(ElseClause {
-                                    condition: Some(else_condition),
-                                    compound_statement: else_compound_statement,
-                                    ..
-                                }),
+                            body: if_body,
+                            else_statement: Some(ElseStatement::ElseIf(else_if)),
                             ..
                         }),
-                    ] => match (
-                        *(*if_compound_statement).clone(),
-                        *(*else_compound_statement).clone(),
-                    ) {
+                    ] => match (*(*if_body).clone(), *(*else_if).body.clone()) {
                         (
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
                                 ..
                             }),
-                            StatementObject::CompoundStatement(CompoundStatement {
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block: else_code_block,
                                 ..
                             }),
                         ) => {
+                            assert_eq!(else_if.else_statement, None);
                             assert_eq!(
                                 condition.as_ref(),
                                 &ExpressionObject::BinaryExpression(BinaryExpression {
@@ -1372,7 +1390,7 @@ int main() {
                                 _ => panic!("AST did not match expected if statement body"),
                             }
                             assert_eq!(
-                                else_condition.as_ref(),
+                                else_if.condition.as_ref(),
                                 &ExpressionObject::BinaryExpression(BinaryExpression {
                                     id: Uuid::new_v4(),
                                     left: Box::new(ExpressionObject::NumberLiteral(
@@ -1417,6 +1435,253 @@ int main() {
     }
 
     #[test]
+    fn test_parse_if_else_if_else_statement() {
+        let c_code = r#"
+                int main() {
+                    if (5 > 0) {
+                        int a;
+                    } else if (5 < 0) {
+                        int b;
+                    } else {
+                        int c;
+                    }
+                }
+                "#;
+        let c_language = C::new();
+        let src_file = c_language.parse_text(c_code).unwrap();
+
+        match src_file.code.as_slice() {
+            [
+                DeclarationObject::FunctionDefinition(FunctionDefinition {
+                    return_type: CType::Int,
+                    identifier,
+                    parameter_list,
+                    compound_statement: CompoundStatement { code_block, .. },
+                    ..
+                }),
+            ] => {
+                assert_eq!(identifier, "main");
+                assert!(parameter_list.is_empty());
+                match code_block.as_slice() {
+                    [
+                        CompoundStatementObject::IfStatement(IfStatement {
+                            condition,
+                            body: if_body,
+                            else_statement: Some(ElseStatement::ElseIf(else_if)),
+                            ..
+                        }),
+                    ] => match (*(*if_body).clone(), *(*else_if).body.clone()) {
+                        (
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
+                                code_block,
+                                ..
+                            }),
+                            CompoundStatementObject::CompoundStatement(CompoundStatement {
+                                code_block: else_if_code_block,
+                                ..
+                            }),
+                        ) => {
+                            assert_eq!(
+                                condition.as_ref(),
+                                &ExpressionObject::BinaryExpression(BinaryExpression {
+                                    id: Uuid::new_v4(),
+                                    left: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "5".to_string(),
+                                        }
+                                    )),
+                                    operator: ">".to_string(),
+                                    right: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "0".to_string(),
+                                        }
+                                    )),
+                                })
+                            );
+                            match code_block.as_slice() {
+                                [
+                                    CompoundStatementObject::Declaration(Declaration {
+                                        primitive_type: CType::Int,
+                                        identifier: a_identifier,
+                                        value: None,
+                                        ..
+                                    }),
+                                ] => {
+                                    assert_eq!(a_identifier, "a");
+                                }
+                                _ => panic!("AST did not match expected if statement body"),
+                            }
+                            assert_eq!(
+                                else_if.condition.as_ref(),
+                                &ExpressionObject::BinaryExpression(BinaryExpression {
+                                    id: Uuid::new_v4(),
+                                    left: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "5".to_string(),
+                                        }
+                                    )),
+                                    operator: "<".to_string(),
+                                    right: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "0".to_string(),
+                                        }
+                                    )),
+                                })
+                            );
+                            match else_if_code_block.as_slice() {
+                                [
+                                    CompoundStatementObject::Declaration(Declaration {
+                                        primitive_type: CType::Int,
+                                        identifier: b_identifier,
+                                        value: None,
+                                        ..
+                                    }),
+                                ] => {
+                                    assert_eq!(b_identifier, "b");
+                                }
+                                _ => panic!("AST did not match expected else statement body"),
+                            }
+                            match &else_if.else_statement {
+                                Some(ElseStatement::ElseClause(else_clause)) => {
+                                    match *(*else_clause).body.clone() {
+                                        CompoundStatementObject::CompoundStatement(
+                                            CompoundStatement {
+                                                code_block: else_code_block,
+                                                ..
+                                            },
+                                        ) => match else_code_block.as_slice() {
+                                            [
+                                                CompoundStatementObject::Declaration(Declaration {
+                                                    primitive_type: CType::Int,
+                                                    identifier: c_identifier,
+                                                    value: None,
+                                                    ..
+                                                }),
+                                            ] => {
+                                                assert_eq!(c_identifier, "c");
+                                            }
+                                            _ => panic!(
+                                                "AST did not match expected else statement body"
+                                            ),
+                                        },
+                                        _ => panic!(
+                                            "AST did not match expected else clause compound statement"
+                                        ),
+                                    }
+                                }
+                                _ => panic!("AST did not match expected else if else statement"),
+                            }
+                        }
+                        _ => panic!("AST did not match expected if statement"),
+                    },
+                    _ => panic!("AST did not match expected function definition"),
+                }
+            }
+            _ => panic!("AST did not match expected function definition"),
+        }
+        let nodes = c_language.write_to_nodes(src_file.clone()).unwrap();
+        let parsed_objects = c_language.parse_nodes(nodes).unwrap();
+        assert_eq!(src_file, parsed_objects);
+    }
+
+    #[test]
+    fn test_parse_if_statement_one_line() {
+        let c_code = r#"
+                int main() {
+                    if (5 > 0)
+                        1;
+                    else if (5 < 0)
+                        2;
+                    else
+                        3;
+                }
+                "#;
+        let c_language = C::new();
+        let src_file = c_language.parse_text(c_code).unwrap();
+
+        match src_file.code.as_slice() {
+            [
+                DeclarationObject::FunctionDefinition(FunctionDefinition {
+                    return_type: CType::Int,
+                    identifier,
+                    parameter_list,
+                    compound_statement: CompoundStatement { code_block, .. },
+                    ..
+                }),
+            ] => {
+                assert_eq!(identifier, "main");
+                assert!(parameter_list.is_empty());
+                match code_block.as_slice() {
+                    [
+                        CompoundStatementObject::IfStatement(IfStatement {
+                            condition,
+                            body,
+                            else_statement: Some(ElseStatement::ElseIf(else_if)),
+                            ..
+                        }),
+                    ] => match *(*body).clone() {
+                        CompoundStatementObject::NumberLiteral(NumberLiteral { value, .. }) => {
+                            assert_eq!(
+                                condition.as_ref(),
+                                &ExpressionObject::BinaryExpression(BinaryExpression {
+                                    id: Uuid::new_v4(),
+                                    left: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "5".to_string(),
+                                        }
+                                    )),
+                                    operator: ">".to_string(),
+                                    right: Box::new(ExpressionObject::NumberLiteral(
+                                        NumberLiteral {
+                                            id: Uuid::new_v4(),
+                                            value: "0".to_string(),
+                                        }
+                                    )),
+                                })
+                            );
+                            assert_eq!(value, "1".to_string());
+                            match *(*else_if).body.clone() {
+                                CompoundStatementObject::NumberLiteral(NumberLiteral {
+                                    value: else_value,
+                                    ..
+                                }) => {
+                                    assert_eq!(else_value, "2".to_string());
+                                }
+                                _ => panic!("AST did not match expected else statement body"),
+                            }
+                            match &else_if.else_statement {
+                                Some(ElseStatement::ElseClause(else_clause)) => {
+                                    match *(*else_clause).body.clone() {
+                                        CompoundStatementObject::NumberLiteral(NumberLiteral {
+                                            value: else_else_value,
+                                            ..
+                                        }) => {
+                                            assert_eq!(else_else_value, "3".to_string());
+                                        }
+                                        _ => panic!("AST did not match expected else clause body"),
+                                    }
+                                }
+                                _ => panic!("AST did not match expected else if else statement"),
+                            }
+                        }
+                        _ => panic!("AST did not match expected if statement body"),
+                    },
+                    _ => panic!("AST did not match expected if statement"),
+                }
+            }
+            _ => panic!("AST did not match expected function definition"),
+        }
+        let nodes = c_language.write_to_nodes(src_file.clone()).unwrap();
+        let parsed_objects = c_language.parse_nodes(nodes).unwrap();
+        assert_eq!(src_file, parsed_objects);
+    }
+
+    #[test]
     fn test_parse_recursive_function() {
         let c_code = r#"
         int test(int a) {
@@ -1443,7 +1708,7 @@ int main() {
                             value: return_value,
                             ..
                         }),
-                    ] => match return_value.as_ref() {
+                    ] => match return_value.as_ref().unwrap() {
                         ExpressionObject::CallExpression(CallExpression {
                             id_declaration,
                             identifier: call_identifier,
@@ -1500,7 +1765,7 @@ int main() {
                     ] => {
                         assert_eq!(variable_identifier, "test");
                         assert_ne!(variable_id, function_id);
-                        match return_value.as_ref() {
+                        match return_value.as_ref().unwrap() {
                             ExpressionObject::Reference(Reference {
                                 declaration_id,
                                 identifier,

@@ -250,12 +250,25 @@ fn search_if_statement(
     if let Some(found) = search_expression_object(&stmt.condition, id) {
         return Some(found);
     }
-    if let Some(found) = search_statement_object(&stmt.compound_statement, id) {
+    if let Some(found) = search_compound_statement_object(&stmt.body, id) {
         return Some(found);
     }
-    if let Some(else_clause) = &stmt.else_clause {
-        if let Some(found) = search_else_clause(else_clause, id) {
-            return Some(found);
+    if let Some(else_statement) = &stmt.else_statement {
+        match else_statement {
+            language_object::statement_object::if_statement::ElseStatement::ElseIf(
+                if_statement,
+            ) => {
+                if let Some(found) = search_if_statement(if_statement, id) {
+                    return Some(found);
+                }
+            }
+            language_object::statement_object::if_statement::ElseStatement::ElseClause(
+                else_clause,
+            ) => {
+                if let Some(found) = search_else_clause(else_clause, id) {
+                    return Some(found);
+                }
+            }
         }
     }
     None
@@ -268,12 +281,7 @@ fn search_else_clause(
     if else_clause.id == id {
         return Some(LanguageObject::ElseClause(else_clause.clone()));
     }
-    if let Some(condition) = &else_clause.condition {
-        if let Some(found) = search_expression_object(condition, id) {
-            return Some(found);
-        }
-    }
-    search_statement_object(&else_clause.compound_statement, id)
+    search_compound_statement_object(&else_clause.body, id)
 }
 
 fn search_return_statement(
@@ -283,5 +291,8 @@ fn search_return_statement(
     if stmt.id == id {
         return Some(LanguageObject::ReturnStatement(stmt.clone()));
     }
-    search_expression_object(&stmt.value, id)
+    match &stmt.value {
+        None => None,
+        Some(value) => search_expression_object(value, id),
+    }
 }

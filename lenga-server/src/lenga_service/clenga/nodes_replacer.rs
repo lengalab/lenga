@@ -249,8 +249,7 @@ fn replace_else_clause(
                 new_else,
             )));
         }
-    } else if let Some(found) =
-        replace_statement_object(&mut else_clause.compound_statement, new_object)
+    } else if let Some(found) = replace_compound_statement_object(&mut else_clause.body, new_object)
     {
         return Some(found);
     }
@@ -328,14 +327,26 @@ fn replace_if_statement(
         if let Some(found) = replace_expression_object(&mut stmt.condition, new_object.clone()) {
             return Some(found);
         }
-        if let Some(found) =
-            replace_statement_object(&mut stmt.compound_statement, new_object.clone())
-        {
+        if let Some(found) = replace_compound_statement_object(&mut stmt.body, new_object.clone()) {
             return Some(found);
         }
-        if let Some(else_clause) = &mut stmt.else_clause {
-            if let Some(found) = replace_else_clause(else_clause, new_object) {
-                return Some(found);
+        if let Some(else_statement) = &stmt.else_statement {
+            match else_statement.clone() {
+                language_object::statement_object::if_statement::ElseStatement::ElseIf(
+                    mut if_statement,
+                ) => {
+                    if let Some(found) = replace_if_statement(&mut if_statement, new_object.clone())
+                    {
+                        return Some(found);
+                    }
+                }
+                language_object::statement_object::if_statement::ElseStatement::ElseClause(
+                    mut else_clause,
+                ) => {
+                    if let Some(found) = replace_else_clause(&mut else_clause, new_object.clone()) {
+                        return Some(found);
+                    }
+                }
             }
         }
     }
@@ -392,7 +403,10 @@ fn replace_return_statement(
                 stmt, new_stmt,
             )));
         }
-    } else if let Some(found) = replace_expression_object(&mut stmt.value, new_object) {
+    } else if let Some(found) = match &mut stmt.value {
+        Some(value) => replace_expression_object(value, new_object),
+        None => None,
+    } {
         return Some(found);
     }
     None

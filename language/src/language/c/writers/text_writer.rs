@@ -216,13 +216,8 @@ impl<'a> Cursor for TextWriter<'a> {
 
     fn write_else_clause(&mut self, else_clause: &ElseClause) -> Result<(), WriterError> {
         self.write(" else")?;
-        if let Some(condition) = &else_clause.condition {
-            self.open_block(Delimitator::Paren)?;
-            condition.write(self)?;
-            self.close_block()?;
-        }
         self.write(" ")?;
-        else_clause.compound_statement.write(self)?;
+        else_clause.body.write(self)?;
         Ok(())
     }
 
@@ -306,9 +301,9 @@ impl<'a> Cursor for TextWriter<'a> {
 
         self.write(&format!(" "))?;
 
-        if_statement.compound_statement.write(self)?;
-        if let Some(else_clause) = &if_statement.else_clause {
-            else_clause.write(self)?
+        if_statement.body.write(self)?;
+        if let Some(else_statement) = &if_statement.else_statement {
+            else_statement.write(self)?
         }
         self.finish_line("")?;
         Ok(())
@@ -336,8 +331,17 @@ impl<'a> Cursor for TextWriter<'a> {
         &mut self,
         return_statement: &ReturnStatement,
     ) -> Result<(), WriterError> {
-        self.write("return ")?;
-        return_statement.value.write(self)?;
+        self.write("return")?;
+        match &return_statement.value {
+            Some(value) => {
+                self.write(" ")?;
+                value.write(self)?;
+            }
+            None => {
+                self.writeln("return")?;
+                return Ok(());
+            }
+        }
         Ok(())
     }
 

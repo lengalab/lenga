@@ -24,7 +24,7 @@ use crate::{
                 compound_statement::{
                     CompoundStatement, compound_statement_object::CompoundStatementObject,
                 },
-                if_statement::{IfStatement, else_clause::ElseClause},
+                if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
                 return_statement::ReturnStatement,
             },
         },
@@ -245,17 +245,12 @@ impl<'a> NodeParser<'a> {
 
     fn else_clause_from_node(&mut self, mut node: Node) -> Result<ElseClause, NodeParserError> {
         assert_eq!(node.node_type, NodeType::ElseClause.as_u64());
-        let condition = node
-            .tags
-            .remove("condition")
-            .map(|value| self.unpack_parse(value))
-            .transpose()?;
         Ok(ElseClause {
             id: node.id,
-            condition: condition.map(|c| c.try_into()).transpose()?,
-            compound_statement: self
-                .compound_statement_from_node(node.children.pop().unwrap())?
-                .try_into()?,
+            body: Box::new(
+                self.clanguageobject_from_node(node.children.pop().unwrap())?
+                    .try_into()?,
+            ),
         })
     }
 
@@ -350,23 +345,31 @@ impl<'a> NodeParser<'a> {
 
     fn if_statement_from_node(&mut self, mut node: Node) -> Result<IfStatement, NodeParserError> {
         assert_eq!(node.node_type, NodeType::IfStatement.as_u64());
+        let else_statement: Option<ElseStatement> =
+            if let Some(mut else_clause) = node.tags.remove("else_clause") {
+                Some(ElseStatement::ElseClause(Box::new(
+                    self.branch()
+                        .else_clause_from_node(else_clause.pop().unwrap())?,
+                )))
+            } else if let Some(mut else_if) = node.tags.remove("else_if") {
+                Some(ElseStatement::ElseIf(Box::new(
+                    self.branch()
+                        .if_statement_from_node(else_if.pop().unwrap())?,
+                )))
+            } else {
+                None
+            };
         Ok(IfStatement {
             id: node.id,
             condition: self
                 .unpack_parse(node.tags.remove("condition").unwrap())?
                 .try_into()?,
-            compound_statement: self
-                .branch()
-                .compound_statement_from_node(node.children.pop().unwrap())?
-                .try_into()?,
-            else_clause: node
-                .tags
-                .remove("else_clause")
-                .map(|mut else_clause| {
-                    self.branch()
-                        .else_clause_from_node(else_clause.pop().unwrap())
-                })
-                .transpose()?,
+            body: Box::new(
+                self.branch()
+                    .clanguageobject_from_node(node.children.pop().unwrap())?
+                    .try_into()?,
+            ),
+            else_statement,
         })
     }
 
@@ -405,7 +408,11 @@ impl<'a> NodeParser<'a> {
         assert_eq!(node.node_type, NodeType::ReturnStatement.as_u64());
         Ok(ReturnStatement {
             id: node.id,
-            value: self.unpack_parse(node.children)?.try_into()?,
+            value: if node.children.is_empty() {
+                None
+            } else {
+                Some((*self.unpack_parse(node.children)?).try_into()?)
+            },
         })
     }
 

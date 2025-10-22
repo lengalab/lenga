@@ -1,36 +1,30 @@
 use uuid::Uuid;
 
-use crate::{
-    language::c::{
-        c_type::CType,
-        language_object::{
-            ConversionError, LanguageObject as CLanguageObject,
-            declaration_object::{
-                DeclarationObject,
-                declaration::Declaration,
-                function_declaration::{
-                    FunctionDeclaration, function_parameter::FunctionParameter,
-                },
-                function_definition::FunctionDefinition,
-                preproc_include::PreprocInclude,
-            },
-            expression_object::{
-                ExpressionObject, assignment_expression::AssignmentExpression,
-                binary_expression::BinaryExpression, call_expression::CallExpression,
-                number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
-            },
-            special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown},
-            statement_object::{
-                StatementObject,
-                compound_statement::CompoundStatement,
-                if_statement::{IfStatement, else_clause::ElseClause},
-                return_statement::ReturnStatement,
-            },
+use crate::language::c::{
+    c_type::CType,
+    language_object::{
+        ConversionError, LanguageObject as CLanguageObject,
+        declaration_object::{
+            declaration::Declaration,
+            function_declaration::{FunctionDeclaration, function_parameter::FunctionParameter},
+            function_definition::FunctionDefinition,
+            preproc_include::PreprocInclude,
         },
-        parsers::context::{Context, SymbolAlreadyExists},
-        writers::node_writer::node_type::NodeType,
+        expression_object::{
+            ExpressionObject, assignment_expression::AssignmentExpression,
+            binary_expression::BinaryExpression, call_expression::CallExpression,
+            number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
+        },
+        special_object::comment::Comment,
+        statement_object::{
+            compound_statement::{
+                CompoundStatement, compound_statement_object::CompoundStatementObject,
+            },
+            if_statement::{self, ElseStatement, IfStatement, else_clause::ElseClause},
+            return_statement::ReturnStatement,
+        },
     },
-    node::Node,
+    parsers::context::{Context, SymbolAlreadyExists},
 };
 
 use crate::language::c::TreeSitterNodeExt;
@@ -285,12 +279,18 @@ impl<'a> TreeSitterParser<'a> {
         source_code: &str,
     ) -> Result<ReturnStatement, TreeSitterParserError> {
         assert_eq!(node.child(0).unwrap().kind(), "return");
-        let value = self
-            .object_from_tree_sitter_node(node.child(1).unwrap(), source_code)
-            .unwrap();
+        let child = node.child(1).unwrap();
+        let value: Option<ExpressionObject> = match child.kind() {
+            ";" => None,
+            _ => Some(
+                self.object_from_tree_sitter_node(child, source_code)
+                    .unwrap()
+                    .try_into()?,
+            ),
+        };
         Ok(ReturnStatement {
             id: Uuid::new_v4(),
-            value: Box::new(value.try_into()?),
+            value,
         })
     }
 
@@ -332,8 +332,7 @@ impl<'a> TreeSitterParser<'a> {
         assert_eq!(node.child(0).unwrap().kind(), "if");
         let parenthesized_expression = node.child(1).unwrap();
         assert_eq!(parenthesized_expression.kind(), "parenthesized_expression");
-        let compound_statement = node.child(2).unwrap();
-        assert_eq!(compound_statement.kind(), "compound_statement");
+        let body = node.child(2).unwrap();
 
         assert_eq!(parenthesized_expression.child(0).unwrap().kind(), "(");
         let condition = self
@@ -341,10 +340,7 @@ impl<'a> TreeSitterParser<'a> {
             .object_from_tree_sitter_node(parenthesized_expression.child(1).unwrap(), source_code)
             .unwrap();
         assert_eq!(parenthesized_expression.child(2).unwrap().kind(), ")");
-        let code_block = self.compound_statement_from_tree_sitter_nodes(
-            compound_statement.child(0).unwrap(),
-            source_code,
-        )?;
+        let body_object = self.object_from_tree_sitter_node(body, source_code)?;
 
         let else_clause = if let Some(else_node) = node.child(3) {
             assert_eq!(else_node.kind(), "else_clause");
@@ -356,8 +352,8 @@ impl<'a> TreeSitterParser<'a> {
         Ok(IfStatement {
             id: Uuid::new_v4(),
             condition: Box::new(condition.try_into()?),
-            compound_statement: code_block.try_into()?, // TODO support other types of statements
-            else_clause,
+            body: Box::new(body_object.try_into()?),
+            else_statement: else_clause,
         })
     }
 
@@ -425,33 +421,50 @@ impl<'a> TreeSitterParser<'a> {
         &mut self,
         node: tree_sitter::Node<'_>,
         source_code: &str,
-    ) -> Result<ElseClause, TreeSitterParserError> {
+    ) -> Result<ElseStatement, TreeSitterParserError> {
         assert_eq!(node.child(0).unwrap().kind(), "else");
         let compound_statement = node.child(1).unwrap();
-        match compound_statement.kind() {
-            "compound_statement" => {
-                let code_block = self.compound_statement_from_tree_sitter_nodes(
-                    compound_statement.child(0).unwrap(),
-                    source_code,
-                )?;
+        // match compound_statement.kind() {
+        //     "compound_statement" => {
+        //         let code_block = self.compound_statement_from_tree_sitter_nodes(
+        //             compound_statement.child(0).unwrap(),
+        //             source_code,
+        //         )?;
+        //         let body = CompoundStatementObject::CompoundStatement(code_block);
 
-                Ok(ElseClause {
-                    id: Uuid::new_v4(),
-                    condition: None,
-                    compound_statement: code_block.try_into()?, // TODO support other types of statements
-                })
-            }
-            "if_statement" => {
-                let if_statement =
-                    self.if_statement_from_tree_sitter_node(compound_statement, source_code)?;
+        //         Ok(ElseStatement::ElseClause(Box::new(ElseClause {
+        //             id: Uuid::new_v4(),
+        //             body: Box::new(body), // TODO support other types of statements
+        //         })))
+        //     }
+        //     "if_statement" => {
+        //         let if_statement =
+        //             self.if_statement_from_tree_sitter_node(compound_statement, source_code)?;
 
-                Ok(ElseClause {
-                    id: Uuid::new_v4(),
-                    condition: Some(if_statement.condition),
-                    compound_statement: if_statement.compound_statement,
-                })
+        //         Ok(ElseStatement::ElseIf(Box::new(IfStatement {
+        //             id: Uuid::new_v4(),
+        //             condition: if_statement.condition,
+        //             body: if_statement.body,
+        //             else_statement: if_statement.else_statement,
+        //         })))
+        //     }
+        //     other => panic!(
+        //         "Unexpected node kind: {}, rest of child: {:?}",
+        //         other,
+        //         node.dump(source_code)
+        //     ),
+        // }
+        let object = self
+            .branch()
+            .object_from_tree_sitter_node(compound_statement, source_code)?;
+        match object {
+            CLanguageObject::IfStatement(if_statement) => {
+                Ok(ElseStatement::ElseIf(Box::new(if_statement)))
             }
-            other => panic!("Unexpected node kind: {}", other),
+            other => Ok(ElseStatement::ElseClause(Box::new(ElseClause {
+                id: Uuid::new_v4(),
+                body: Box::new(other.try_into()?),
+            }))),
         }
     }
 

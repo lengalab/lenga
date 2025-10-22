@@ -373,15 +373,11 @@ fn declaration_to_proto(
 fn else_clause_to_proto(
     else_clause: c::language_object::statement_object::if_statement::else_clause::ElseClause,
 ) -> proto::ElseClause {
-    let condition = else_clause
-        .condition
-        .map(|condition| c_expression_object_to_proto(*condition));
-    let compound_statement = c_statement_object_to_proto(*else_clause.compound_statement);
+    let compound_statement = c_compound_statement_object_to_proto(*else_clause.body);
 
     proto::ElseClause {
         id: else_clause.id.to_string(),
-        condition: condition,
-        compound_statement: Some(Box::new(compound_statement)),
+        body: Some(Box::new(compound_statement)),
     }
 }
 
@@ -405,7 +401,7 @@ fn c_statement_object_to_proto(
             let if_statement_msg = if_statement_to_proto(if_statement);
             proto::StatementObject {
                 statement_object: Some(proto::statement_object::StatementObject::IfStatement(
-                    Box::new(if_statement_msg),
+                    if_statement_msg,
                 )),
             }
         }
@@ -479,16 +475,27 @@ fn if_statement_to_proto(
     if_statement: c::language_object::statement_object::if_statement::IfStatement,
 ) -> proto::IfStatement {
     let condition = c_expression_object_to_proto(*if_statement.condition);
-    let compound_statement = c_statement_object_to_proto(*if_statement.compound_statement);
-    let else_clause = if_statement
-        .else_clause
-        .map(|else_clause| Box::new(else_clause_to_proto(else_clause)));
+    let body = c_compound_statement_object_to_proto(*if_statement.body);
+    let else_statement = if_statement
+        .else_statement
+        .map(|else_statement| match else_statement {
+            c::language_object::statement_object::if_statement::ElseStatement::ElseIf(
+                if_statement,
+            ) => proto::if_statement::ElseStatement::ElseIf(Box::new(if_statement_to_proto(
+                *if_statement,
+            ))),
+            c::language_object::statement_object::if_statement::ElseStatement::ElseClause(
+                else_clause,
+            ) => proto::if_statement::ElseStatement::ElseClause(Box::new(else_clause_to_proto(
+                *else_clause,
+            ))),
+        });
 
     proto::IfStatement {
         id: if_statement.id.to_string(),
         condition: Some(condition),
-        compound_statement: Some(Box::new(compound_statement)),
-        else_clause: else_clause,
+        body: Some(Box::new(body)),
+        else_statement,
     }
 }
 
@@ -523,11 +530,14 @@ fn reference_to_proto(
 fn return_statement_to_proto(
     return_statement: c::language_object::statement_object::return_statement::ReturnStatement,
 ) -> proto::ReturnStatement {
-    let value = c_expression_object_to_proto(*return_statement.value);
+    let value = match return_statement.value {
+        Some(value) => Some(c_expression_object_to_proto(value)),
+        None => None,
+    };
 
     proto::ReturnStatement {
         id: return_statement.id.to_string(),
-        value: Some(value),
+        value,
     }
 }
 
@@ -569,7 +579,7 @@ fn c_compound_statement_object_to_proto(
                 let if_statement_msg = if_statement_to_proto(if_statement);
                 proto::CompoundStatementObject {
                     compound_statement_object: Some(proto::compound_statement_object::CompoundStatementObject::IfStatement(
-                        if_statement_msg,
+                        Box::new(if_statement_msg),
                     )),
                 }
             }
@@ -908,9 +918,8 @@ mod tests {
         let else_clause =
             c::language_object::statement_object::if_statement::else_clause::ElseClause {
                 id,
-                condition: None,
-                compound_statement: Box::new(
-                    c::language_object::statement_object::StatementObject::CompoundStatement(
+                body: Box::new(
+                    c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::CompoundStatement(
                         compound_statement,
                     ),
                 ),
@@ -918,14 +927,10 @@ mod tests {
         let proto_else = else_clause_to_proto(else_clause);
 
         assert_eq!(proto_else.id, id.to_string());
-        assert!(proto_else.condition.is_none());
-        match proto_else
-            .compound_statement
-            .unwrap()
-            .statement_object
-            .unwrap()
-        {
-            proto::statement_object::StatementObject::CompoundStatement(compound_statement) => {
+        match proto_else.body.unwrap().compound_statement_object.unwrap() {
+            proto::compound_statement_object::CompoundStatementObject::CompoundStatement(
+                compound_statement,
+            ) => {
                 assert_eq!(compound_statement.id, comp_id.to_string());
                 assert_eq!(compound_statement.code_block.len(), 0);
             }
@@ -1039,7 +1044,7 @@ mod tests {
         let comp_id = Uuid::new_v4();
         let id = Uuid::new_v4();
         let compound_statement =
-            c::language_object::statement_object::StatementObject::CompoundStatement(
+            c::language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject::CompoundStatement(
                 c::language_object::statement_object::compound_statement::CompoundStatement {
                     id: comp_id,
                     code_block: vec![],
@@ -1048,8 +1053,8 @@ mod tests {
         let if_stmt = c::language_object::statement_object::if_statement::IfStatement {
             id,
             condition: Box::new(cond),
-            compound_statement: Box::new(compound_statement),
-            else_clause: None,
+            body: Box::new(compound_statement),
+            else_statement: None,
         };
 
         let proto_if = if_statement_to_proto(if_stmt);
@@ -1068,14 +1073,11 @@ mod tests {
             _ => panic!("expected NumberLiteral in condition"),
         }
 
-        // compound_statement should be present
-        match proto_if
-            .compound_statement
-            .unwrap()
-            .statement_object
-            .unwrap()
-        {
-            proto::statement_object::StatementObject::CompoundStatement(compound_statement) => {
+        // body should be present
+        match proto_if.body.unwrap().compound_statement_object.unwrap() {
+            proto::compound_statement_object::CompoundStatementObject::CompoundStatement(
+                compound_statement,
+            ) => {
                 assert_eq!(compound_statement.id, comp_id.to_string());
                 assert!(compound_statement.code_block.is_empty());
             }
@@ -1083,7 +1085,6 @@ mod tests {
         }
 
         // else_clause should be None
-        assert!(proto_if.else_clause.is_none());
     }
 
     #[test]
@@ -1136,7 +1137,7 @@ mod tests {
         let value = "42";
         let ret = c::language_object::statement_object::return_statement::ReturnStatement {
             id,
-            value: Box::new(
+            value: Some(
                 c::language_object::expression_object::ExpressionObject::NumberLiteral(
                     c::language_object::expression_object::number_literal::NumberLiteral {
                         id: value_id,
