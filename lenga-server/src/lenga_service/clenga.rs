@@ -22,7 +22,7 @@ pub mod proto {
 
 // Service Interface
 use proto::{
-    EditRequest, InitRequest, OpenRequest, SessionId, SourceFile, Void,
+    CloseRequest, EditRequest, InitRequest, OpenRequest, SessionId, SourceFile, Void,
     c_lenga_server::{CLenga, CLengaServer},
 };
 
@@ -177,6 +177,15 @@ impl CLenga for CLengaService {
         output_file
             .write_all(&output)
             .map_err(|err| Status::data_loss(err.to_string()))?;
+
+        Ok(Response::new(proto::Void {}))
+    }
+
+    async fn close(&self, request: Request<CloseRequest>) -> Result<Response<Void>, Status> {
+        let req = request.into_inner();
+
+        let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
+        files.remove(&req.path);
 
         Ok(Response::new(proto::Void {}))
     }
