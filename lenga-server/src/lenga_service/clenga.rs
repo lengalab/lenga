@@ -181,7 +181,7 @@ impl CLenga for CLengaService {
         Ok(Response::new(proto::Void {}))
     }
 
-    async fn close(&self, request: Request<CloseRequest>) -> Result<Response<Void>, Status> {
+    async fn close_file(&self, request: Request<CloseRequest>) -> Result<Response<Void>, Status> {
         let req = request.into_inner();
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock

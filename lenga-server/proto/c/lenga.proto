@@ -9,7 +9,7 @@ service CLenga {
     rpc OpenFile(OpenRequest) returns (SourceFile);
     rpc Edit(EditRequest) returns (EditResponse);
     rpc Save(SaveRequest) returns (Void);
-    rpc Close(CloseRequest) returns (Void);
+    rpc CloseFile(CloseRequest) returns (Void);
     rpc AvailableInserts(AvailableInsertsRequest) returns (InsertOptions);
 }
 
