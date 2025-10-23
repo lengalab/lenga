@@ -36,7 +36,7 @@ use crate::lenga_service::clenga::{
 
 #[derive(Debug)]
 pub struct CLengaService {
-    files: Arc<Mutex<HashMap<String, c::language_object::special_object::source_file::SourceFile>>>,
+    files: Arc<Mutex<HashMap<Uuid, c::language_object::special_object::source_file::SourceFile>>>,
 }
 
 impl Default for CLengaService {
@@ -63,9 +63,11 @@ impl CLenga for CLengaService {
         request: Request<OpenRequest>,
     ) -> Result<Response<SourceFile>, Status> {
         let req = request.into_inner();
+        let file_id =
+            Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
-        let file = match files.get(&req.path) {
+        let file = match files.get(&file_id) {
             Some(file_ast) => file_ast.clone(),
             None => {
                 let file =
@@ -76,7 +78,7 @@ impl CLenga for CLengaService {
                     .parse_nodes(content)
                     .map_err(|err| Status::internal(err))?;
 
-                files.insert(req.path, src_file.clone());
+                files.insert(file_id, src_file.clone());
 
                 src_file
             }
@@ -89,6 +91,9 @@ impl CLenga for CLengaService {
 
     async fn edit(&self, request: Request<EditRequest>) -> Result<Response<EditResponse>, Status> {
         let req = request.into_inner();
+
+        let file_id =
+            Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
         let edited_object = req
             .edited_object
             .ok_or(Status::invalid_argument("Inexistent edited_object field"))?;
@@ -96,7 +101,7 @@ impl CLenga for CLengaService {
             .map_err(|err| Status::invalid_argument(err))?;
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
-        match files.get_mut(&req.path) {
+        match files.get_mut(&file_id) {
             Some(file_ast) => {
                 let node_id = edited_node.id();
                 let replaced = replace_source_file(file_ast, edited_node).ok_or_else(|| {
@@ -118,7 +123,7 @@ impl CLenga for CLengaService {
                 };
                 Ok(Response::new(res))
             }
-            None => Err(Status::not_found(format!("File not found: {}", req.path))),
+            None => Err(Status::not_found(format!("File not found: {}", req.id))),
         }
     }
 
@@ -127,9 +132,11 @@ impl CLenga for CLengaService {
         request: Request<AvailableInsertsRequest>,
     ) -> Result<Response<InsertOptions>, Status> {
         let req = request.into_inner();
+        let file_id =
+            Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
 
         let mut files = self.files.lock().unwrap();
-        match files.get_mut(&req.path) {
+        match files.get_mut(&file_id) {
             Some(file_ast) => {
                 let node_id = Uuid::parse_str(&req.node_id).unwrap();
                 let parent = find_node(file_ast, node_id).ok_or_else(|| {
@@ -147,18 +154,20 @@ impl CLenga for CLengaService {
                     options: mapped_option,
                 }))
             }
-            None => Err(Status::not_found(format!("File not found: {}", req.path))),
+            None => Err(Status::not_found(format!("File not found: {}", req.id))),
         }
     }
 
     async fn save(&self, request: Request<SaveRequest>) -> Result<Response<Void>, Status> {
         let req = request.into_inner();
 
+        let file_id =
+            Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
         let file_ast = {
             let files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
-            files.get(&req.path).cloned()
+            files.get(&file_id).cloned()
         }
-        .ok_or_else(|| Status::not_found(format!("File not found: {}", req.path)))?;
+        .ok_or_else(|| Status::not_found(format!("File not found: {}", req.id)))?;
 
         let c = C::new();
         let output = c
@@ -184,8 +193,11 @@ impl CLenga for CLengaService {
     async fn close_file(&self, request: Request<CloseRequest>) -> Result<Response<Void>, Status> {
         let req = request.into_inner();
 
+        let file_id =
+            Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
+
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
-        files.remove(&req.path);
+        files.remove(&file_id);
 
         Ok(Response::new(proto::Void {}))
     }
