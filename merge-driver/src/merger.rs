@@ -723,7 +723,9 @@ fn reference_changes(
     origin: &expression_object::reference::Reference,
     alt: &expression_object::reference::Reference,
 ) -> Option<expression_object::reference::Reference> {
-    if alt.declaration_id != origin.declaration_id || alt.identifier != origin.identifier {
+    if alt.declaration_id != origin.declaration_id
+    /*|| alt.identifier != origin.identifier*/
+    {
         return Some(alt.clone());
     } else {
         None
@@ -999,15 +1001,10 @@ fn merge_return_statement(
 #[cfg(test)]
 
 mod tests {
-    use core::num;
-
     use super::*;
     use language::language::c::{
         c_type::CType,
-        language_object::{
-            expression_object::binary_expression,
-            statement_object::compound_statement::compound_statement_object,
-        },
+        language_object::statement_object::compound_statement::compound_statement_object,
     };
     use uuid::Uuid;
 
