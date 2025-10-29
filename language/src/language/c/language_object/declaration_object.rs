@@ -3,6 +3,8 @@ use crate::language::c::language_object::{
     special_object::{comment, unknown::Unknown},
 };
 
+use uuid::Uuid;
+
 pub mod declaration;
 pub mod function_declaration;
 pub mod function_definition;
@@ -36,6 +38,17 @@ impl DeclarationObject {
             DeclarationObject::PreprocInclude(preproc) => preproc.write(w),
             DeclarationObject::Unknown(unknown) => unknown.write(w),
             DeclarationObject::Comment(comment) => comment.write(w),
+        }
+    }
+
+    pub fn id(&self) -> Uuid {
+        match self {
+            DeclarationObject::Declaration(decl) => decl.id,
+            DeclarationObject::FunctionDeclaration(func_decl) => func_decl.id,
+            DeclarationObject::FunctionDefinition(func_def) => func_def.id,
+            DeclarationObject::PreprocInclude(preproc) => preproc.id,
+            DeclarationObject::Unknown(unknown) => unknown.id,
+            DeclarationObject::Comment(comment) => comment.id,
         }
     }
 }

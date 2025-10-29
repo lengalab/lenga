@@ -1,4 +1,4 @@
 [workspace]
 resolver = "3"
 
-members = ["language", "transpiler", "lenga-server", "field_inspect_derive"]
+members = ["language", "transpiler", "lenga-server", "field_inspect_derive", "merge-driver"]
