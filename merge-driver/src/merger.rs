@@ -999,10 +999,15 @@ fn merge_return_statement(
 #[cfg(test)]
 
 mod tests {
+    use core::num;
+
     use super::*;
     use language::language::c::{
         c_type::CType,
-        language_object::statement_object::compound_statement::compound_statement_object,
+        language_object::{
+            expression_object::binary_expression,
+            statement_object::compound_statement::compound_statement_object,
+        },
     };
     use uuid::Uuid;
 
@@ -1526,6 +1531,384 @@ mod tests {
                     assert_eq!(reference.identifier, new_identifier_two);
                 } else {
                     panic!("expected Reference");
+                }
+            } else {
+                panic!("expected BinaryExpression");
+            }
+        } else {
+            panic!("expected FunctionDefinition");
+        }
+    }
+
+    #[test]
+    fn test_09() {
+        // Creating origin
+        let id_number_one = Uuid::new_v4();
+        let value_one = "1".to_string();
+        let number_one = expression_object::number_literal::NumberLiteral {
+            id: id_number_one,
+            value: value_one,
+        };
+
+        let id_number_two = Uuid::new_v4();
+        let value_two = "2".to_string();
+        let number_two = expression_object::number_literal::NumberLiteral {
+            id: id_number_two,
+            value: value_two,
+        };
+
+        let id_decl_one = Uuid::new_v4();
+        let primitive_type_one = CType::Int;
+        let mut identifier_one = "a".to_string();
+        let declaration_one = declaration_object::declaration::Declaration {
+            id: id_decl_one,
+            primitive_type: primitive_type_one.clone(),
+            identifier: identifier_one.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::NumberLiteral(number_one.clone()),
+            )),
+        };
+
+        let id_decl_two = Uuid::new_v4();
+        let primitive_type_two = CType::Int;
+        let mut identifier_two = "b".to_string();
+        let declaration_two = declaration_object::declaration::Declaration {
+            id: id_decl_two,
+            primitive_type: primitive_type_two.clone(),
+            identifier: identifier_two.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::NumberLiteral(number_two.clone()),
+            )),
+        };
+
+        let id_ref_one = Uuid::new_v4();
+        let reference_one = expression_object::reference::Reference {
+            id: id_ref_one,
+            declaration_id: id_decl_one,
+            identifier: identifier_one.clone(),
+        };
+
+        let id_ref_two = Uuid::new_v4();
+        let reference_two = expression_object::reference::Reference {
+            id: id_ref_two,
+            declaration_id: id_decl_two,
+            identifier: identifier_two.clone(),
+        };
+
+        let id_operation = Uuid::new_v4();
+        let operator = "+".to_string();
+        let operation = expression_object::binary_expression::BinaryExpression {
+            id: id_operation,
+            left: Box::new(expression_object::ExpressionObject::Reference(
+                reference_one.clone(),
+            )),
+            operator: operator.clone(),
+            right: Box::new(expression_object::ExpressionObject::Reference(
+                reference_two.clone(),
+            )),
+        };
+
+        let id_decl_three = Uuid::new_v4();
+        let primitive_type_three = CType::Int;
+        let identifier_three = "c".to_string();
+        let declaration_three = declaration_object::declaration::Declaration {
+            id: id_decl_three,
+            primitive_type: primitive_type_three.clone(),
+            identifier: identifier_three.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::BinaryExpression(operation.clone()),
+            )),
+        };
+
+        let id_comp_stmt = Uuid::new_v4();
+        let comp_stmt = statement_object::compound_statement::CompoundStatement {
+            id: id_comp_stmt,
+            code_block: vec![
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_one.clone(),
+                ),
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_two.clone(),
+                ),
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_three.clone(),
+                ),
+            ],
+        };
+
+        let id_function = Uuid::new_v4();
+        let return_type = CType::Void;
+        let identifier_function = "main".to_string();
+        let function = declaration_object::function_definition::FunctionDefinition {
+            id: id_function,
+            return_type: return_type.clone(),
+            identifier: identifier_function.clone(),
+            parameter_list: vec![],
+            compound_statement: comp_stmt.clone(),
+        };
+
+        let id = Uuid::new_v4();
+        let origin = special_object::source_file::SourceFile {
+            id,
+            code: vec![declaration_object::DeclarationObject::FunctionDefinition(
+                function.clone(),
+            )],
+        };
+
+        // Creating ours
+
+        let new_identifier_one = "A".to_string();
+        let declaration_one = declaration_object::declaration::Declaration {
+            id: id_decl_one,
+            primitive_type: primitive_type_one.clone(),
+            identifier: new_identifier_one.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::NumberLiteral(number_one.clone()),
+            )),
+        };
+
+        let new_identifier_two = "B".to_string();
+        let declaration_two = declaration_object::declaration::Declaration {
+            id: id_decl_two,
+            primitive_type: primitive_type_two.clone(),
+            identifier: new_identifier_two.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::NumberLiteral(number_two.clone()),
+            )),
+        };
+
+        let reference_one = expression_object::reference::Reference {
+            id: id_ref_one,
+            declaration_id: id_decl_one,
+            identifier: identifier_one.clone(),
+        };
+
+        let reference_two = expression_object::reference::Reference {
+            id: id_ref_two,
+            declaration_id: id_decl_two,
+            identifier: identifier_two.clone(),
+        };
+
+        let operator = "+".to_string();
+        let operation = expression_object::binary_expression::BinaryExpression {
+            id: id_operation,
+            left: Box::new(expression_object::ExpressionObject::Reference(
+                reference_one.clone(),
+            )),
+            operator: operator.clone(),
+            right: Box::new(expression_object::ExpressionObject::Reference(
+                reference_two.clone(),
+            )),
+        };
+
+        let new_identifier_three = "C".to_string();
+        let declaration_three = declaration_object::declaration::Declaration {
+            id: id_decl_three,
+            primitive_type: primitive_type_three.clone(),
+            identifier: new_identifier_three.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::BinaryExpression(operation.clone()),
+            )),
+        };
+
+        let comp_stmt = statement_object::compound_statement::CompoundStatement {
+            id: id_comp_stmt,
+            code_block: vec![
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_one.clone(),
+                ),
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_two.clone(),
+                ),
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_three.clone(),
+                ),
+            ],
+        };
+
+        let identifier_function = "main".to_string();
+        let function = declaration_object::function_definition::FunctionDefinition {
+            id: id_function,
+            return_type: return_type.clone(),
+            identifier: identifier_function.clone(),
+            parameter_list: vec![],
+            compound_statement: comp_stmt.clone(),
+        };
+
+        let ours = special_object::source_file::SourceFile {
+            id: Uuid::new_v4(),
+            code: vec![declaration_object::DeclarationObject::FunctionDefinition(
+                function.clone(),
+            )],
+        };
+
+        // Theirs
+
+        identifier_one = "a".to_string();
+        let declaration_one = declaration_object::declaration::Declaration {
+            id: id_decl_one,
+            primitive_type: primitive_type_one.clone(),
+            identifier: identifier_one.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::NumberLiteral(number_one.clone()),
+            )),
+        };
+
+        identifier_two = "b".to_string();
+        let declaration_two = declaration_object::declaration::Declaration {
+            id: id_decl_two,
+            primitive_type: primitive_type_two.clone(),
+            identifier: identifier_two.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::NumberLiteral(number_two.clone()),
+            )),
+        };
+
+        let reference_one = expression_object::reference::Reference {
+            id: id_ref_one,
+            declaration_id: id_decl_one,
+            identifier: identifier_one.clone(),
+        };
+
+        let reference_two = expression_object::reference::Reference {
+            id: id_ref_two,
+            declaration_id: id_decl_two,
+            identifier: identifier_two.clone(),
+        };
+
+        let operator = "+".to_string();
+        let operation = expression_object::binary_expression::BinaryExpression {
+            id: id_operation,
+            left: Box::new(expression_object::ExpressionObject::Reference(
+                reference_two.clone(),
+            )),
+            operator: operator.clone(),
+            right: Box::new(expression_object::ExpressionObject::Reference(
+                reference_one.clone(),
+            )),
+        };
+
+        let identifier_three = "c".to_string();
+        let declaration_three = declaration_object::declaration::Declaration {
+            id: id_decl_three,
+            primitive_type: primitive_type_three.clone(),
+            identifier: identifier_three.clone(),
+            value: Some(Box::new(
+                expression_object::ExpressionObject::BinaryExpression(operation.clone()),
+            )),
+        };
+
+        let comp_stmt = statement_object::compound_statement::CompoundStatement {
+            id: id_comp_stmt,
+            code_block: vec![
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_one.clone(),
+                ),
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_two.clone(),
+                ),
+                compound_statement_object::CompoundStatementObject::Declaration(
+                    declaration_three.clone(),
+                ),
+            ],
+        };
+
+        let identifier_function = "main".to_string();
+        let function = declaration_object::function_definition::FunctionDefinition {
+            id: id_function,
+            return_type: return_type.clone(),
+            identifier: identifier_function.clone(),
+            parameter_list: vec![],
+            compound_statement: comp_stmt.clone(),
+        };
+
+        let theirs = special_object::source_file::SourceFile {
+            id: Uuid::new_v4(),
+            code: vec![declaration_object::DeclarationObject::FunctionDefinition(
+                function.clone(),
+            )],
+        };
+
+        // Testing
+
+        let merger = Merger::new();
+
+        let merge = merger.merge(origin.clone(), ours, theirs).unwrap();
+
+        assert_eq!(merge.id, origin.id);
+        assert_eq!(merge.code.len(), origin.code.len());
+
+        if let declaration_object::DeclarationObject::FunctionDefinition(func) = &merge.code[0] {
+            assert_eq!(func.id, function.id);
+            assert_eq!(func.return_type, function.return_type);
+            assert_eq!(func.identifier, function.identifier);
+            assert_eq!(&func.parameter_list.len(), &function.parameter_list.len());
+
+            let merge_comp_stmt = func.compound_statement.clone();
+            assert_eq!(merge_comp_stmt.code_block.len(), comp_stmt.code_block.len());
+
+            if let compound_statement_object::CompoundStatementObject::Declaration(decl) =
+                &merge_comp_stmt.code_block[0]
+            {
+                assert_eq!(decl.id, declaration_one.id);
+                assert_eq!(decl.primitive_type, declaration_one.primitive_type);
+                assert_eq!(decl.identifier, new_identifier_one);
+                if let expression_object::ExpressionObject::NumberLiteral(number) =
+                    decl.value.as_ref().unwrap().as_ref()
+                {
+                    assert_eq!(number.id, number_one.id);
+                    assert_eq!(number.value, number_one.value);
+                }
+            } else {
+                panic!("expected NumberLiteral");
+            }
+
+            if let compound_statement_object::CompoundStatementObject::Declaration(decl) =
+                &merge_comp_stmt.code_block[1]
+            {
+                assert_eq!(decl.id, declaration_two.id);
+                assert_eq!(decl.primitive_type, declaration_two.primitive_type);
+                assert_eq!(decl.identifier, new_identifier_two);
+                if let expression_object::ExpressionObject::NumberLiteral(number) =
+                    decl.value.as_ref().unwrap().as_ref()
+                {
+                    assert_eq!(number.id, number_two.id);
+                    assert_eq!(number.value, number_two.value);
+                }
+            } else {
+                panic!("expected Declaration");
+            }
+
+            if let compound_statement_object::CompoundStatementObject::Declaration(decl) =
+                &merge_comp_stmt.code_block[2]
+            {
+                assert_eq!(decl.id, declaration_three.id);
+                assert_eq!(decl.primitive_type, declaration_three.primitive_type);
+                assert_eq!(decl.identifier, new_identifier_three);
+
+                if let expression_object::ExpressionObject::BinaryExpression(binary) =
+                    decl.value.as_ref().unwrap().as_ref()
+                {
+                    assert_eq!(binary.id, operation.id);
+                    assert_eq!(binary.operator, operator);
+
+                    if let expression_object::ExpressionObject::Reference(reference) =
+                        binary.left.as_ref()
+                    {
+                        assert_eq!(reference.id, reference_two.id);
+                        assert_eq!(reference.declaration_id, reference_two.declaration_id);
+                    } else {
+                        panic!("expected Reference");
+                    }
+
+                    if let expression_object::ExpressionObject::Reference(reference) =
+                        binary.right.as_ref()
+                    {
+                        assert_eq!(reference.id, reference_one.id);
+                        assert_eq!(reference.declaration_id, reference_one.declaration_id);
+                    } else {
+                        panic!("expected Reference");
+                    }
                 }
             } else {
                 panic!("expected BinaryExpression");
