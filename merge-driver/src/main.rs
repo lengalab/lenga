@@ -16,46 +16,50 @@ fn main() -> io::Result<()> {
     let mut it = env::args();
     let _ = it.next();
 
-    let _path_o = it.next().ok_or(io::Error::new(
+    let path_origin = it.next().ok_or(io::Error::new(
         ErrorKind::InvalidInput,
         "missing %O (ancestor) path",
     ))?;
-    let path_a = it.next().ok_or(io::Error::new(
+    let path_ours = it.next().ok_or(io::Error::new(
         ErrorKind::InvalidInput,
         "missing %A (ancestor) path",
     ))?;
-    let path_b = it.next().ok_or(io::Error::new(
+    let path_theirs = it.next().ok_or(io::Error::new(
         ErrorKind::InvalidInput,
         "missing %B (ancestor) path",
     ))?;
 
     let c = C::new();
 
-    let file_o = File::open(&path_a)?;
-    let content_o: Vec<u8> = file_o.bytes().map(|b| b.unwrap()).collect();
-    let src_file_o = c
-        .parse_nodes(content_o)
+    let file_origin = File::open(&path_origin)?;
+    let content_origin: Vec<u8> = file_origin.bytes().map(|b| b.unwrap()).collect();
+    let src_file_origin = c
+        .parse_nodes(content_origin)
         .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
 
-    let file_a = File::open(&path_a)?;
-    let content_a: Vec<u8> = file_a.bytes().map(|b| b.unwrap()).collect();
-    let src_file_a = c
-        .parse_nodes(content_a)
+    let file_ours = File::open(&path_ours)?;
+    let content_ours: Vec<u8> = file_ours.bytes().map(|b| b.unwrap()).collect();
+    let src_file_ours = c
+        .parse_nodes(content_ours)
         .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
 
-    let file_b = File::open(&path_b)?;
-    let content_b: Vec<u8> = file_b.bytes().map(|b| b.unwrap()).collect();
-    let src_file_b = c
-        .parse_nodes(content_b)
+    let file_theirs = File::open(&path_theirs)?;
+    let content_theirs: Vec<u8> = file_theirs.bytes().map(|b| b.unwrap()).collect();
+    let src_file_theirs = c
+        .parse_nodes(content_theirs)
         .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
 
-    let merged_file = src_file_b;
+    let merger = Merger::new();
+
+    let merged_file = merger
+        .merge(src_file_origin, src_file_ours, src_file_theirs)
+        .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
 
     let merged_data = c
         .write_to_nodes(merged_file)
         .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
 
-    fs::write(Path::new(&path_a), merged_data)?;
+    fs::write(Path::new(&path_ours), merged_data)?;
 
     Ok(())
 }
