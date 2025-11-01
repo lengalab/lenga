@@ -269,11 +269,9 @@ pub fn derive_field_inspect(input: TokenStream) -> TokenStream {
 
             expanded.into()
         }
-        _ => {
-            return syn::Error::new_spanned(name, "FieldInspect only supports structs and enums")
-                .to_compile_error()
-                .into();
-        }
+        _ => syn::Error::new_spanned(name, "FieldInspect only supports structs and enums")
+            .to_compile_error()
+            .into(),
     }
 }
 

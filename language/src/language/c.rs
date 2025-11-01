@@ -19,13 +19,18 @@ use crate::language::{
         },
     },
 };
-use sha2::digest::Reset;
 use tree_sitter::Parser;
 use uuid::Uuid;
 
 pub mod c_type;
 
 pub struct C {}
+
+impl Default for C {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl C {
     pub fn new() -> Self {
@@ -64,14 +69,14 @@ impl Language for C {
         let objects: Vec<DeclarationObject> =
             TreeSitterParser::parse_with_tree(root_node.child(0).unwrap(), source_code)?
                 .into_iter()
-                .map(|o| o.try_into())
+                .map(std::convert::TryInto::try_into)
                 .collect::<Result<Vec<DeclarationObject>, language_object::ConversionError>>()
-                .map_err(|e: language_object::ConversionError| format!("{:?}", e))?;
+                .map_err(|e: language_object::ConversionError| format!("{e:?}"))?;
 
-        return Ok(CSourceFile {
+        Ok(CSourceFile {
             id: Uuid::new_v4(),
             code: objects,
-        });
+        })
     }
 
     fn parse_nodes(&self, nodes: Vec<u8>) -> Result<Self::SourceFile, String> {
@@ -83,8 +88,8 @@ impl Language for C {
     fn write_to_text(&self, src_file: Self::SourceFile) -> Result<String, String> {
         let mut buf: Vec<u8> = Vec::new();
         let mut cursor = Cursor::new(&mut buf);
-        let stringwriter: Box<&mut dyn std::io::Write> = Box::new(&mut cursor);
-        let mut writer = TextWriter::new(stringwriter, Style::gnu_style());
+        let mut stringwriter: Box<&mut dyn std::io::Write> = Box::new(&mut cursor);
+        let mut writer = TextWriter::new(&mut stringwriter, Style::gnu_style());
 
         writer.write_file(&src_file).unwrap();
         let string = String::from_utf8(buf).unwrap();
@@ -94,8 +99,8 @@ impl Language for C {
     fn write_to_nodes(&self, src_file: Self::SourceFile) -> Result<Vec<u8>, String> {
         let mut buf: Vec<u8> = Vec::new();
         let mut cursor = Cursor::new(&mut buf);
-        let writer: Box<&mut dyn std::io::Write> = Box::new(&mut cursor);
-        NodeWriter::new(writer).write_file(&src_file).unwrap();
+        let mut writer: Box<&mut dyn std::io::Write> = Box::new(&mut cursor);
+        NodeWriter::new(&mut writer).write_file(&src_file).unwrap();
         Ok(buf)
     }
 }
@@ -106,14 +111,14 @@ fn dfs(walker: &mut tree_sitter::TreeCursor, source_code: &str) -> Vec<String> {
     lines.append(
         &mut format!("'{}': {}", node.kind(), node.content(source_code))
             .split('\n')
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .collect::<Vec<String>>(),
     );
 
     if walker.goto_first_child() {
         loop {
             for line in dfs(walker, source_code) {
-                lines.push(format!("  {}", line));
+                lines.push(format!("  {line}"));
             }
             if !walker.goto_next_sibling() {
                 break;
@@ -162,11 +167,10 @@ mod tests {
             },
             special_object::comment::Comment,
             statement_object::{
-                StatementObject,
                 compound_statement::{
                     CompoundStatement, compound_statement_object::CompoundStatementObject,
                 },
-                if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
+                if_statement::{ElseStatement, IfStatement},
                 return_statement::ReturnStatement,
             },
         },
@@ -657,7 +661,7 @@ int main() {
                     compound_statement: CompoundStatement { code_block, .. },
                     ..
                 }),
-            ] if *identifier == "main".to_string() && *parameter_list == vec![] => match code_block
+            ] if identifier.as_str() == "main" && parameter_list.is_empty() => match code_block
                 .as_slice()
             {
                 [
@@ -851,7 +855,7 @@ int main() {
                                     value: Some(value),
                                     ..
                                 }),
-                            ] => match &*value {
+                            ] => match value {
                                 ExpressionObject::Reference(Reference {
                                     declaration_id,
                                     identifier,
@@ -1242,7 +1246,7 @@ int main() {
                             else_statement: Some(ElseStatement::ElseClause(else_clause)),
                             ..
                         }),
-                    ] => match (*(*if_body).clone(), *(*else_clause).body.clone()) {
+                    ] => match (*(*if_body).clone(), *else_clause.body.clone()) {
                         (
                             CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
@@ -1345,7 +1349,7 @@ int main() {
                             else_statement: Some(ElseStatement::ElseIf(else_if)),
                             ..
                         }),
-                    ] => match (*(*if_body).clone(), *(*else_if).body.clone()) {
+                    ] => match (*(*if_body).clone(), *else_if.body.clone()) {
                         (
                             CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
@@ -1470,7 +1474,7 @@ int main() {
                             else_statement: Some(ElseStatement::ElseIf(else_if)),
                             ..
                         }),
-                    ] => match (*(*if_body).clone(), *(*else_if).body.clone()) {
+                    ] => match (*(*if_body).clone(), *else_if.body.clone()) {
                         (
                             CompoundStatementObject::CompoundStatement(CompoundStatement {
                                 code_block,
@@ -1547,7 +1551,7 @@ int main() {
                             }
                             match &else_if.else_statement {
                                 Some(ElseStatement::ElseClause(else_clause)) => {
-                                    match *(*else_clause).body.clone() {
+                                    match *else_clause.body.clone() {
                                         CompoundStatementObject::CompoundStatement(
                                             CompoundStatement {
                                                 code_block: else_code_block,
@@ -1645,7 +1649,7 @@ int main() {
                                 })
                             );
                             assert_eq!(value, "1".to_string());
-                            match *(*else_if).body.clone() {
+                            match *else_if.body.clone() {
                                 CompoundStatementObject::NumberLiteral(NumberLiteral {
                                     value: else_value,
                                     ..
@@ -1656,7 +1660,7 @@ int main() {
                             }
                             match &else_if.else_statement {
                                 Some(ElseStatement::ElseClause(else_clause)) => {
-                                    match *(*else_clause).body.clone() {
+                                    match *else_clause.body.clone() {
                                         CompoundStatementObject::NumberLiteral(NumberLiteral {
                                             value: else_else_value,
                                             ..

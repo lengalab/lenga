@@ -14,8 +14,8 @@ use crate::language::c::language_object::statement_object::{
     Debug,
     PartialEq,
     Clone,
-    field_inspect_derive::VariantProvider,
-    field_inspect_derive::FieldInspect,
+    lenga_field_inspect_derive::VariantProvider,
+    lenga_field_inspect_derive::FieldInspect,
 )]
 pub enum CompoundStatementObject {
     Declaration(declaration::Declaration),

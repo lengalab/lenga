@@ -5,7 +5,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct FunctionParameter {
     pub id: Uuid,
     pub identifier: String,
@@ -19,7 +19,7 @@ impl PartialEq for FunctionParameter {
 }
 
 impl FunctionParameter {
-    pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
+    pub fn write(&self, _w: &mut dyn Cursor) -> Result<(), WriterError> {
         todo!()
     }
 }

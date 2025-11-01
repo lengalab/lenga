@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::language::c::writers::{Cursor, writer_error::WriterError};
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 /// ```c
 /// a
 /// ```
@@ -20,7 +20,7 @@ impl PartialEq for Reference {
 
 impl Reference {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_reference(&self)
+        w.write_reference(self)
     }
 }
 

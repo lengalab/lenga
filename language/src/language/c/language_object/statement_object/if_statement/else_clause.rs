@@ -1,16 +1,11 @@
 use uuid::Uuid;
 
 use crate::language::c::{
-    language_object::{
-        expression_object::ExpressionObject,
-        statement_object::{
-            StatementObject, compound_statement::compound_statement_object::CompoundStatementObject,
-        },
-    },
+    language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject,
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct ElseClause {
     pub id: Uuid,
     pub body: Box<CompoundStatementObject>,
@@ -18,7 +13,7 @@ pub struct ElseClause {
 
 impl ElseClause {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_else_clause(&self)
+        w.write_else_clause(self)
     }
 }
 

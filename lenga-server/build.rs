@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             "c/lenga.proto",
             // Other definitions
         ],
-        &["proto"],
+        &["./lenga-server/proto"],
     )?;
     Ok(())
 }

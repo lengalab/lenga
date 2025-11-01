@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::language::c::writers::{Cursor, writer_error::WriterError};
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct Comment {
     pub id: Uuid,
     pub content: String,
@@ -10,7 +10,7 @@ pub struct Comment {
 
 impl Comment {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_comment(&self)
+        w.write_comment(self)
     }
 }
 

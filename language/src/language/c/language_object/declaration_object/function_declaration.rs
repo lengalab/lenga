@@ -8,7 +8,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 /// ```c
 /// int main();
 /// ```
@@ -29,7 +29,7 @@ impl PartialEq for FunctionDeclaration {
 
 impl FunctionDeclaration {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_function_declaration(&self)
+        w.write_function_declaration(self)
     }
 }
 

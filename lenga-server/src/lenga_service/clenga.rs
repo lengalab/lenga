@@ -3,10 +3,10 @@ use language::language::{
     c::{self, C},
 };
 use std::collections::HashMap;
-use std::io::Write;
+use std::fs::File;
+use std::io::{BufReader, Read, Write};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use std::{fs::File, io::Read};
 use tokio::fs;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
@@ -34,17 +34,9 @@ use crate::lenga_service::clenga::{
     proto_parser::proto_to_c_language_object,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct CLengaService {
     files: Arc<Mutex<HashMap<Uuid, c::language_object::special_object::source_file::SourceFile>>>,
-}
-
-impl Default for CLengaService {
-    fn default() -> Self {
-        Self {
-            files: Default::default(),
-        }
-    }
 }
 
 #[tonic::async_trait]
@@ -67,21 +59,19 @@ impl CLenga for CLengaService {
             Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
-        let file = match files.get(&file_id) {
-            Some(file_ast) => file_ast.clone(),
-            None => {
-                let file =
-                    File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
-                let content: Vec<u8> = file.bytes().map(|b| b.unwrap()).collect(); //TODO: recover or abort
-                let c = C::new();
-                let src_file = c
-                    .parse_nodes(content)
-                    .map_err(|err| Status::internal(err))?;
+        let file = if let Some(file_ast) = files.get(&file_id) {
+            file_ast.clone()
+        } else {
+            let mut file =
+                File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
+            let mut content = Vec::new();
+            BufReader::new(&mut file).read_to_end(&mut content).unwrap(); //TODO: recover or abort
+            let c = C::new();
+            let src_file = c.parse_nodes(content).map_err(Status::internal)?;
 
-                files.insert(file_id, src_file.clone());
+            files.insert(file_id, src_file.clone());
 
-                src_file
-            }
+            src_file
         };
 
         let ast = source_file_to_proto(file);
@@ -97,8 +87,8 @@ impl CLenga for CLengaService {
         let edited_object = req
             .edited_object
             .ok_or(Status::invalid_argument("Inexistent edited_object field"))?;
-        let edited_node = proto_to_c_language_object(edited_object)
-            .map_err(|err| Status::invalid_argument(err))?;
+        let edited_node =
+            proto_to_c_language_object(edited_object).map_err(Status::invalid_argument)?;
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
         match files.get_mut(&file_id) {
@@ -106,8 +96,7 @@ impl CLenga for CLengaService {
                 let node_id = edited_node.id();
                 let replaced = replace_source_file(file_ast, edited_node).ok_or_else(|| {
                     Status::failed_precondition(format!(
-                        "Matching objects with id {} not found",
-                        node_id
+                        "Matching objects with id {node_id} not found"
                     ))
                 })?;
 
@@ -141,8 +130,7 @@ impl CLenga for CLengaService {
                 let node_id = Uuid::parse_str(&req.node_id).unwrap();
                 let parent = find_node(file_ast, node_id).ok_or_else(|| {
                     Status::failed_precondition(format!(
-                        "Matching objects with id {} not found",
-                        node_id
+                        "Matching objects with id {node_id} not found"
                     ))
                 })?;
                 let options = parent.get_options(&req.node_key);
@@ -170,15 +158,13 @@ impl CLenga for CLengaService {
         .ok_or_else(|| Status::not_found(format!("File not found: {}", req.id)))?;
 
         let c = C::new();
-        let output = c
-            .write_to_nodes(file_ast)
-            .map_err(|err| Status::data_loss(err))?;
+        let output = c.write_to_nodes(file_ast).map_err(Status::data_loss)?;
 
         let path = Path::new(&req.write_path);
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent)
                 .await
-                .map_err(|e| Status::internal(format!("Failed to create directories: {}", e)))?;
+                .map_err(|e| Status::internal(format!("Failed to create directories: {e}")))?;
         }
 
         let mut output_file =

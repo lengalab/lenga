@@ -5,7 +5,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 /// ```c
 /// int result = first(1);
 /// //           \______/
@@ -38,6 +38,6 @@ impl PartialEq for CallExpression {
 
 impl CallExpression {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_call_expression(&self)
+        w.write_call_expression(self)
     }
 }

@@ -1,5 +1,3 @@
-use core::panic;
-
 use crate::language::c::language_object::{
     ConversionError, LanguageObject, special_object::unknown::Unknown,
 };
@@ -15,8 +13,8 @@ pub mod string_literal;
     Debug,
     PartialEq,
     Clone,
-    field_inspect_derive::VariantProvider,
-    field_inspect_derive::FieldInspect,
+    lenga_field_inspect_derive::VariantProvider,
+    lenga_field_inspect_derive::FieldInspect,
 )]
 pub enum ExpressionObject {
     AssignmentExpression(assignment_expression::AssignmentExpression),
@@ -60,7 +58,7 @@ impl ExpressionObject {
         }
     }
 
-    pub fn as_language_objects(vec: &Vec<Self>) -> Vec<LanguageObject> {
+    pub fn as_language_objects(vec: &[Self]) -> Vec<LanguageObject> {
         vec.iter().map(|e| e.as_language_object()).collect()
     }
 }

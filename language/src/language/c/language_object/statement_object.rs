@@ -10,8 +10,8 @@ pub mod return_statement;
     Debug,
     PartialEq,
     Clone,
-    field_inspect_derive::VariantProvider,
-    field_inspect_derive::FieldInspect,
+    lenga_field_inspect_derive::VariantProvider,
+    lenga_field_inspect_derive::FieldInspect,
 )]
 pub enum StatementObject {
     CompoundStatement(compound_statement::CompoundStatement),

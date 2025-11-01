@@ -86,7 +86,7 @@ pub fn proto_to_c_language_object(
         }
         None => return Err("no node was set".to_string()),
     };
-    return Ok(c_object);
+    Ok(c_object)
 }
 
 pub fn proto_to_c_expression_object(
@@ -136,7 +136,7 @@ pub fn proto_to_c_expression_object(
             c::language_object::expression_object::ExpressionObject::Unknown(unknown_c_object)
         }
     };
-    return Ok(c_object);
+    Ok(c_object)
 }
 
 fn source_file_to_c_object(
@@ -147,7 +147,7 @@ fn source_file_to_c_object(
 
     let mut code: Vec<c::language_object::declaration_object::DeclarationObject> = Vec::new();
     for msg in src_file.code {
-        code.push(proto_to_c_declaration_object(msg)?)
+        code.push(proto_to_c_declaration_object(msg)?);
     }
 
     Ok(c::language_object::special_object::source_file::SourceFile { id, code })
@@ -280,7 +280,7 @@ fn call_expression_to_c_object(
             id,
             id_declaration,
             identifier: call_expression.identifier,
-            argument_list: argument_list,
+            argument_list,
         },
     )
 }
@@ -338,36 +338,6 @@ fn else_clause_to_c_object(
             body: Box::new(compound_statement),
         },
     )
-}
-
-fn statement_object_to_c_object(
-    statement_object: proto::StatementObject,
-) -> Result<c::language_object::statement_object::StatementObject, String> {
-    match statement_object
-        .statement_object
-        .ok_or("Empty Statement Object")?
-    {
-        proto::statement_object::StatementObject::CompoundStatement(compound_statement) => Ok(
-            c::language_object::statement_object::StatementObject::CompoundStatement(
-                compound_statement_to_c_object(compound_statement)?,
-            ),
-        ),
-        proto::statement_object::StatementObject::IfStatement(if_statement) => Ok(
-            c::language_object::statement_object::StatementObject::IfStatement(
-                if_statement_to_c_object(if_statement)?,
-            ),
-        ),
-        proto::statement_object::StatementObject::ReturnStatement(return_statement) => Ok(
-            c::language_object::statement_object::StatementObject::ReturnStatement(
-                return_statement_to_c_object(return_statement)?,
-            ),
-        ),
-        proto::statement_object::StatementObject::Unknown(unknown) => Ok(
-            c::language_object::statement_object::StatementObject::Unknown(unknown_to_c_object(
-                unknown,
-            )?),
-        ),
-    }
 }
 
 fn unknown_to_c_object(
@@ -638,7 +608,7 @@ fn compound_statement_to_c_object(
     Ok(
         c::language_object::statement_object::compound_statement::CompoundStatement {
             id,
-            code_block: code_block,
+            code_block,
         },
     )
 }

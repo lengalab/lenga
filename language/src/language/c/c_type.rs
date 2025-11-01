@@ -1,20 +1,47 @@
 use crate::language::c::TreeSitterNodeExt;
+use std::fmt;
+use std::str::FromStr;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub enum CType {
     Int,
     Float,
     Double,
     Char,
+    #[default]
     Void,
     Fn(FnType),
     // TODO add more types as needed
 }
 
 #[derive(Debug, PartialEq, Clone)]
-struct FnType {
+pub struct FnType {
     pub return_type: Box<CType>,
     pub parameters: Vec<CType>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseCTypeError;
+
+impl fmt::Display for ParseCTypeError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("invalid C primitive type")
+    }
+}
+
+impl FromStr for CType {
+    type Err = ParseCTypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "int" => Ok(CType::Int),
+            "float" => Ok(CType::Float),
+            "double" => Ok(CType::Double),
+            "char" => Ok(CType::Char),
+            "void" => Ok(CType::Void),
+            _ => Err(ParseCTypeError),
+        }
+    }
 }
 
 impl CType {
@@ -29,26 +56,16 @@ impl CType {
         }
     }
 
-    pub fn from_str(type_str: &str) -> Option<Self> {
-        match type_str {
-            "int" => Some(CType::Int),
-            "float" => Some(CType::Float),
-            "double" => Some(CType::Double),
-            "char" => Some(CType::Char),
-            "void" => Some(CType::Void),
-            _ => todo!(),
-        }
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(s: &str) -> Option<Self> {
+        s.parse::<CType>().ok()
     }
 
     pub fn from_tree_sitter_node(node: tree_sitter::Node<'_>, source_code: &str) -> Self {
         assert_eq!(node.kind(), "primitive_type");
         let type_str = node.content(source_code);
-        Self::from_str(&type_str).unwrap()
-    }
-}
-
-impl Default for CType {
-    fn default() -> Self {
-        CType::Void
+        type_str
+            .parse::<CType>()
+            .expect("invalid primitive_type text in AST")
     }
 }

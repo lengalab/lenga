@@ -5,7 +5,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct BinaryExpression {
     pub id: Uuid,
     pub left: Box<ExpressionObject>,
@@ -15,7 +15,7 @@ pub struct BinaryExpression {
 
 impl BinaryExpression {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_binary_expression(&self)
+        w.write_binary_expression(self)
     }
 }
 

@@ -248,7 +248,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -256,16 +256,6 @@ name = "fastrand"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37909eebbb50d72f9059c3b6d82c0463f2ff062c9e95845c43a6c9c0355411be"
-
-[[package]]
-name = "field_inspect_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
- "uuid",
-]
 
 [[package]]
 name = "fixedbitset"
@@ -521,34 +511,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "language"
-version = "0.1.0"
+name = "lenga"
+version = "1.0.0"
 dependencies = [
+ "anyhow",
  "bimap",
  "bincode",
- "cc",
- "field_inspect_derive",
+ "lenga_field_inspect_derive",
+ "prost",
+ "prost-types",
  "serde",
+ "serde-reflection",
  "sha2",
+ "tokio",
+ "tonic",
+ "tonic-build",
  "tree-sitter",
  "tree-sitter-c",
  "uuid",
 ]
 
 [[package]]
-name = "lenga-server"
-version = "0.1.0"
+name = "lenga_field_inspect_derive"
+version = "1.0.0"
 dependencies = [
- "anyhow",
- "field_inspect_derive",
- "language",
- "prost",
- "prost-types",
- "serde",
- "serde-reflection",
- "tokio",
- "tonic",
- "tonic-build",
+ "proc-macro2",
+ "quote",
+ "syn",
  "uuid",
 ]
 
@@ -591,16 +580,6 @@ name = "memchr"
 version = "2.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
-
-[[package]]
-name = "merge"
-version = "0.1.0"
-dependencies = [
- "language",
- "tree-sitter",
- "tree-sitter-c",
- "uuid",
-]
 
 [[package]]
 name = "mime"
@@ -900,7 +879,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1048,15 +1027,15 @@ checksum = "2047c6ded9c721764247e62cd3b03c09ffc529b2ba5b10ec482ae507a4a70160"
 
 [[package]]
 name = "tempfile"
-version = "3.22.0"
+version = "3.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84fa4d11fadde498443cca10fd3ac23c951f0dc59e080e9f4b93d4df4e4eea53"
+checksum = "2d31c77bdf42a745371d260a26ca7163f1e0924b64afa0b688e61b5a9fa02f16"
 dependencies = [
  "fastrand",
  "getrandom 0.3.3",
  "once_cell",
  "rustix",
- "windows-sys 0.61.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1248,16 +1227,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "transpiler"
-version = "0.1.0"
-dependencies = [
- "cc",
- "language",
- "tree-sitter",
- "tree-sitter-c",
-]
-
-[[package]]
 name = "tree-sitter"
 version = "0.25.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1406,12 +1375,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "windows-link"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45e46c0661abb7180e7b9c281db115305d49ca1709ab8242adf09666d2173c65"
-
-[[package]]
 name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1427,15 +1390,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.61.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e201184e40b2ede64bc2ea34968b28e33622acdbbf37104f0e4a33f7abe657aa"
-dependencies = [
- "windows-link",
 ]
 
 [[package]]

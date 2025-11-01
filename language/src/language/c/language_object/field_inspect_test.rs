@@ -7,9 +7,10 @@ mod tests {
             StatementObject, compound_statement::compound_statement_object::CompoundStatementObject,
         },
     };
-    use field_inspect_derive::FieldInspect;
+    use lenga_field_inspect_derive::FieldInspect;
 
     #[derive(FieldInspect)]
+    #[expect(dead_code)]
     struct TestStruct {
         pub name: String,
         pub description: String,
@@ -21,8 +22,8 @@ mod tests {
         // Test wrapped types
         pub vec_statements: Vec<StatementObject>,
         pub opt_expression: Option<ExpressionObject>,
-        pub boxed_declaration: Box<DeclarationObject>,
-        pub nested: Option<Box<Vec<StatementObject>>>,
+        pub boxed_declaration: DeclarationObject,
+        pub nested: Option<Vec<StatementObject>>,
     }
 
     impl Default for TestStruct {
@@ -37,7 +38,7 @@ mod tests {
                 count: 0,
                 vec_statements: vec![],
                 opt_expression: None,
-                boxed_declaration: Box::new(DeclarationObject::default()),
+                boxed_declaration: *Box::new(DeclarationObject::default()),
                 nested: None,
             }
         }

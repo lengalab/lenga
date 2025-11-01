@@ -5,7 +5,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct SourceFile {
     pub id: Uuid,
     pub code: Vec<DeclarationObject>,
@@ -13,7 +13,7 @@ pub struct SourceFile {
 
 impl SourceFile {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_source_file(&self)
+        w.write_source_file(self)
     }
 }
 

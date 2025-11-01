@@ -15,17 +15,16 @@ use std::{any::Any, fmt::Debug};
 use uuid::Uuid;
 
 use declaration_object::{
-    DeclarationObject, declaration::Declaration, function_declaration::FunctionDeclaration,
+    declaration::Declaration, function_declaration::FunctionDeclaration,
     function_definition::FunctionDefinition, preproc_include::PreprocInclude,
 };
 use expression_object::{
-    ExpressionObject, assignment_expression::AssignmentExpression,
-    binary_expression::BinaryExpression, call_expression::CallExpression,
-    number_literal::NumberLiteral, reference::Reference, string_literal::StringLiteral,
+    assignment_expression::AssignmentExpression, binary_expression::BinaryExpression,
+    call_expression::CallExpression, number_literal::NumberLiteral, reference::Reference,
+    string_literal::StringLiteral,
 };
 use special_object::{comment::Comment, source_file::SourceFile, unknown::Unknown};
 use statement_object::{
-    StatementObject,
     compound_statement::CompoundStatement,
     if_statement::{IfStatement, else_clause::ElseClause},
     return_statement::ReturnStatement,
@@ -33,7 +32,7 @@ use statement_object::{
 
 // fn write(&self, w: &mut dyn Writer) -> Result<(), WriterError>;
 // fn as_any(&self) -> &dyn Any;
-#[derive(Debug, PartialEq, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, PartialEq, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub enum LanguageObject {
     SourceFile(SourceFile),
 

@@ -2,7 +2,7 @@ use uuid::Uuid;
 
 use crate::language::c::writers::{Cursor, writer_error::WriterError};
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct StringLiteral {
     pub id: Uuid,
     pub value: String,
@@ -10,7 +10,7 @@ pub struct StringLiteral {
 
 impl StringLiteral {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_string_literal(&self)
+        w.write_string_literal(self)
     }
 }
 

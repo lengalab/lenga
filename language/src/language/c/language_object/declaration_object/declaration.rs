@@ -6,7 +6,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, PartialEq, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, PartialEq, lenga_field_inspect_derive::FieldInspect)]
 /// ```c
 /// int a; // value == None
 /// int a = 5; value == Some(_)
@@ -20,7 +20,7 @@ pub struct Declaration {
 
 impl Declaration {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_declaration(&self)
+        w.write_declaration(self)
     }
 }
 

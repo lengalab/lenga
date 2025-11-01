@@ -5,7 +5,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct ReturnStatement {
     pub id: Uuid,
     pub value: Option<ExpressionObject>,
@@ -28,6 +28,6 @@ impl Default for ReturnStatement {
 
 impl ReturnStatement {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_return_statement(&self)
+        w.write_return_statement(self)
     }
 }

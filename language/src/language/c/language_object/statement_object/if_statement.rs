@@ -14,7 +14,7 @@ use crate::language::c::{
     writers::{Cursor, writer_error::WriterError},
 };
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub enum ElseStatement {
     ElseIf(Box<IfStatement>),
     ElseClause(Box<ElseClause>),
@@ -55,7 +55,7 @@ impl TryFrom<LanguageObject> for ElseStatement {
     }
 }
 
-#[derive(Debug, Clone, field_inspect_derive::FieldInspect)]
+#[derive(Debug, Clone, lenga_field_inspect_derive::FieldInspect)]
 pub struct IfStatement {
     pub id: Uuid,
     pub condition: Box<ExpressionObject>,
@@ -65,7 +65,7 @@ pub struct IfStatement {
 
 impl IfStatement {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_if_statement(&self)
+        w.write_if_statement(self)
     }
 }
 

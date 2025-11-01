@@ -63,26 +63,6 @@ fn replace_expression_object(
     }
 }
 
-fn replace_statement_object(
-    object: &mut language_object::statement_object::StatementObject,
-    new_object: LanguageObject,
-) -> Option<LanguageObject> {
-    match object {
-        language_object::statement_object::StatementObject::CompoundStatement(obj) => {
-            replace_compound_statement(obj, new_object)
-        }
-        language_object::statement_object::StatementObject::IfStatement(obj) => {
-            replace_if_statement(obj, new_object)
-        }
-        language_object::statement_object::StatementObject::ReturnStatement(obj) => {
-            replace_return_statement(obj, new_object)
-        }
-        language_object::statement_object::StatementObject::Unknown(obj) => {
-            replace_unknown(obj, new_object)
-        }
-    }
-}
-
 fn replace_declaration_object(
     object: &mut DeclarationObject,
     new_object: LanguageObject,

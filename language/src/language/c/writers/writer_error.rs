@@ -11,7 +11,7 @@ impl From<std::io::Error> for WriterError {
 impl std::fmt::Display for WriterError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            WriterError::Io(error) => write!(f, "IO error: {}", error),
+            WriterError::Io(error) => write!(f, "IO error: {error}"),
         }
     }
 }
@@ -21,7 +21,7 @@ impl std::error::Error for WriterError {}
 impl std::fmt::Debug for WriterError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            WriterError::Io(error) => write!(f, "IO error: {:?}", error),
+            WriterError::Io(error) => write!(f, "IO error: {error:?}"),
         }
     }
 }

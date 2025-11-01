@@ -1,7 +1,5 @@
 use std::{any::Any, fmt::Debug};
 
-use crate::{language::c::language_object::LanguageObject as CLanguageObject, node::Node};
-
 pub mod c;
 
 pub trait LanguageObject: Debug + Any + PartialEqAny {
@@ -18,10 +16,7 @@ where
     T: 'static + PartialEq + Any,
 {
     fn eq_dyn(&self, other: &dyn PartialEqAny) -> bool {
-        other
-            .as_any()
-            .downcast_ref::<T>()
-            .map_or(false, |b| self == b)
+        other.as_any().downcast_ref::<T>() == Some(self)
     }
 
     fn as_any(&self) -> &dyn Any {
@@ -32,15 +27,6 @@ where
 impl PartialEq for dyn LanguageObject {
     fn eq(&self, other: &Self) -> bool {
         <dyn PartialEqAny>::eq_dyn(self, other)
-    }
-}
-
-impl dyn LanguageObject {
-    fn eq_dyn(&self, other: &dyn LanguageObject) -> bool {
-        let self_peq = self as &dyn PartialEqAny;
-        let other_peq = other as &dyn PartialEqAny;
-
-        self_peq.as_any().type_id() == other_peq.as_any().type_id() && self_peq.eq_dyn(other_peq)
     }
 }
 
