@@ -10,6 +10,12 @@ pub struct Context<'a> {
     parent: Option<&'a Context<'a>>,
 }
 
+impl<'a> Default for Context<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> Context<'a> {
     pub fn new() -> Self {
         Self {
@@ -21,7 +27,7 @@ impl<'a> Context<'a> {
     pub fn branch(&'a self) -> Context<'a> {
         Context {
             symbols: BiHashMap::new(),
-            parent: Some(&self),
+            parent: Some(self),
         }
     }
 
@@ -61,7 +67,7 @@ impl<'a> Context<'a> {
         match res {
             Overwritten::Neither => Ok(id),
             Overwritten::Right(_, _) => Err(SymbolAlreadyExists {}),
-            other => panic!("Unexpected overwrite case: {:?}", other),
+            other => panic!("Unexpected overwrite case: {other:?}"),
         }
     }
 
@@ -91,9 +97,9 @@ impl<'a> Context<'a> {
 
 fn variable_or_function_identifier(identifier: &String, is_fn: bool) -> String {
     if is_fn {
-        format!("{}()", identifier) // TODO improve how to differentiate functions with variable symbols
+        format!("{identifier}()") // TODO improve how to differentiate functions with variable symbols
     } else {
-        format!("{}", identifier)
+        identifier.to_string()
     }
 }
 

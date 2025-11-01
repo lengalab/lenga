@@ -10,7 +10,7 @@ pub struct PreprocInclude {
 
 impl PreprocInclude {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_preproc_include(&self)
+        w.write_preproc_include(self)
     }
 }
 

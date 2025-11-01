@@ -15,7 +15,7 @@ pub struct BinaryExpression {
 
 impl BinaryExpression {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_binary_expression(&self)
+        w.write_binary_expression(self)
     }
 }
 

@@ -1,13 +1,6 @@
 use uuid::Uuid;
 
-use crate::language::c::{
-    language_object::{
-        declaration_object::DeclarationObject,
-        special_object::{comment::Comment, unknown::Unknown},
-        statement_object::StatementObject,
-    },
-    writers::{Cursor, writer_error::WriterError},
-};
+use crate::language::c::writers::{Cursor, writer_error::WriterError};
 
 pub mod compound_statement_object;
 
@@ -19,7 +12,7 @@ pub struct CompoundStatement {
 
 impl CompoundStatement {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_compound_statement(&self)
+        w.write_compound_statement(self)
     }
 }
 

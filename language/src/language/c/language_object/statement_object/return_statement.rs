@@ -28,6 +28,6 @@ impl Default for ReturnStatement {
 
 impl ReturnStatement {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_return_statement(&self)
+        w.write_return_statement(self)
     }
 }

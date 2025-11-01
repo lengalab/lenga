@@ -18,7 +18,7 @@ pub struct AssignmentExpression {
 
 impl AssignmentExpression {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_assignment_expression(&self)
+        w.write_assignment_expression(self)
     }
 }
 

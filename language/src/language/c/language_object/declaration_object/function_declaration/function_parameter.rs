@@ -19,7 +19,7 @@ impl PartialEq for FunctionParameter {
 }
 
 impl FunctionParameter {
-    pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
+    pub fn write(&self, _w: &mut dyn Cursor) -> Result<(), WriterError> {
         todo!()
     }
 }

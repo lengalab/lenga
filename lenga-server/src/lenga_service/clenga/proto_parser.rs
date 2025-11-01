@@ -86,7 +86,7 @@ pub fn proto_to_c_language_object(
         }
         None => return Err("no node was set".to_string()),
     };
-    return Ok(c_object);
+    Ok(c_object)
 }
 
 pub fn proto_to_c_expression_object(
@@ -136,7 +136,7 @@ pub fn proto_to_c_expression_object(
             c::language_object::expression_object::ExpressionObject::Unknown(unknown_c_object)
         }
     };
-    return Ok(c_object);
+    Ok(c_object)
 }
 
 fn source_file_to_c_object(
@@ -280,7 +280,7 @@ fn call_expression_to_c_object(
             id,
             id_declaration,
             identifier: call_expression.identifier,
-            argument_list: argument_list,
+            argument_list,
         },
     )
 }
@@ -340,6 +340,7 @@ fn else_clause_to_c_object(
     )
 }
 
+#[allow(dead_code)]
 fn statement_object_to_c_object(
     statement_object: proto::StatementObject,
 ) -> Result<c::language_object::statement_object::StatementObject, String> {
@@ -638,7 +639,7 @@ fn compound_statement_to_c_object(
     Ok(
         c::language_object::statement_object::compound_statement::CompoundStatement {
             id,
-            code_block: code_block,
+            code_block,
         },
     )
 }

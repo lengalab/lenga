@@ -29,7 +29,7 @@ impl PartialEq for FunctionDeclaration {
 
 impl FunctionDeclaration {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_function_declaration(&self)
+        w.write_function_declaration(self)
     }
 }
 

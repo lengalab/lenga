@@ -38,6 +38,6 @@ impl PartialEq for CallExpression {
 
 impl CallExpression {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_call_expression(&self)
+        w.write_call_expression(self)
     }
 }

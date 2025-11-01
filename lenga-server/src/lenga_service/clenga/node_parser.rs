@@ -1,4 +1,7 @@
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    io::{BufReader, Read},
+};
 
 use language::language::{
     Language,
@@ -8,9 +11,10 @@ use language::language::{
 use crate::lenga_service::clenga::proto;
 
 pub fn parse_file(path: &str) -> proto::SourceFile {
-    let file = File::open(&path).unwrap();
+    let mut file = File::open(path).unwrap();
 
-    let content: Vec<u8> = file.bytes().map(|b| b.unwrap()).collect();
+    let mut content = Vec::new();
+    BufReader::new(&mut file).read_to_end(&mut content).unwrap();
 
     let c = C::new();
     let src_file = c.parse_nodes(content).unwrap();
@@ -342,7 +346,7 @@ fn call_expression_to_proto(
         id: call_expression.id.to_string(),
         id_declaration: call_expression.id_declaration.to_string(),
         identifier: call_expression.identifier,
-        argument_list: argument_list,
+        argument_list,
     }
 }
 
@@ -381,6 +385,7 @@ fn else_clause_to_proto(
     }
 }
 
+#[allow(dead_code)]
 fn c_statement_object_to_proto(
     statement_object: c::language_object::statement_object::StatementObject,
 ) -> proto::StatementObject {
@@ -438,7 +443,7 @@ fn function_declaration_to_proto(
         id: function_declaration.id.to_string(),
         return_type: function_declaration.return_type.as_str().to_string(),
         identifier: function_declaration.identifier,
-        parameter_list: parameter_list,
+        parameter_list,
     }
 }
 
@@ -456,7 +461,7 @@ fn function_definition_to_proto(
         id: function_definition.id.to_string(),
         return_type: function_definition.return_type.as_str().to_string(),
         identifier: function_definition.identifier,
-        parameter_list: parameter_list,
+        parameter_list,
         compound_statement: Some(compound_statement),
     }
 }
@@ -530,10 +535,7 @@ fn reference_to_proto(
 fn return_statement_to_proto(
     return_statement: c::language_object::statement_object::return_statement::ReturnStatement,
 ) -> proto::ReturnStatement {
-    let value = match return_statement.value {
-        Some(value) => Some(c_expression_object_to_proto(value)),
-        None => None,
-    };
+    let value = return_statement.value.map(c_expression_object_to_proto);
 
     proto::ReturnStatement {
         id: return_statement.id.to_string(),
@@ -560,7 +562,7 @@ fn compound_statement_to_proto(
 
     proto::CompoundStatement {
         id: compound_statement.id.to_string(),
-        code_block: code_block,
+        code_block,
     }
 }
 
@@ -830,7 +832,7 @@ mod tests {
             },
         );
         let call = c::language_object::expression_object::call_expression::CallExpression {
-            id: id,
+            id,
             id_declaration: decl_id,
             identifier: call_identifier.to_string(),
             argument_list: vec![param],

@@ -20,7 +20,7 @@ pub struct Declaration {
 
 impl Declaration {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_declaration(&self)
+        w.write_declaration(self)
     }
 }
 

@@ -10,7 +10,7 @@ pub struct Comment {
 
 impl Comment {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_comment(&self)
+        w.write_comment(self)
     }
 }
 

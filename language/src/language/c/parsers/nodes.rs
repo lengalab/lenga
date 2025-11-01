@@ -52,16 +52,22 @@ impl From<NodeParserError> for String {
     fn from(err: NodeParserError) -> Self {
         match err {
             NodeParserError::SymbolAlreadyExists(_) => "Symbol already exists".to_string(),
-            NodeParserError::MissingSymbol(name) => format!("Missing symbol: {}", name),
+            NodeParserError::MissingSymbol(name) => format!("Missing symbol: {name}"),
             NodeParserError::EmptyVec => "Tried to parse empty vec".to_string(),
-            NodeParserError::WrongType(ty) => format!("Tried to parse wrong type: {}", ty),
+            NodeParserError::WrongType(ty) => format!("Tried to parse wrong type: {ty}"),
         }
     }
 }
-
+#[allow(dead_code)]
 pub struct NodeParser<'a> {
     objects: Vec<CLanguageObject>,
     context: Context<'a>,
+}
+
+impl<'a> Default for NodeParser<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> NodeParser<'a> {

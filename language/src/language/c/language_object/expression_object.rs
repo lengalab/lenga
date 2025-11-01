@@ -1,5 +1,3 @@
-use core::panic;
-
 use crate::language::c::language_object::{
     ConversionError, LanguageObject, special_object::unknown::Unknown,
 };
@@ -60,7 +58,7 @@ impl ExpressionObject {
         }
     }
 
-    pub fn as_language_objects(vec: &Vec<Self>) -> Vec<LanguageObject> {
+    pub fn as_language_objects(vec: &[Self]) -> Vec<LanguageObject> {
         vec.iter().map(|e| e.as_language_object()).collect()
     }
 }

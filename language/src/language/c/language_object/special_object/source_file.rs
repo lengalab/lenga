@@ -13,7 +13,7 @@ pub struct SourceFile {
 
 impl SourceFile {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_source_file(&self)
+        w.write_source_file(self)
     }
 }
 

@@ -1,12 +1,7 @@
 use uuid::Uuid;
 
 use crate::language::c::{
-    language_object::{
-        expression_object::ExpressionObject,
-        statement_object::{
-            StatementObject, compound_statement::compound_statement_object::CompoundStatementObject,
-        },
-    },
+    language_object::statement_object::compound_statement::compound_statement_object::CompoundStatementObject,
     writers::{Cursor, writer_error::WriterError},
 };
 
@@ -18,7 +13,7 @@ pub struct ElseClause {
 
 impl ElseClause {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_else_clause(&self)
+        w.write_else_clause(self)
     }
 }
 

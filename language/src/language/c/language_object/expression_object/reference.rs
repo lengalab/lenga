@@ -20,7 +20,7 @@ impl PartialEq for Reference {
 
 impl Reference {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_reference(&self)
+        w.write_reference(self)
     }
 }
 

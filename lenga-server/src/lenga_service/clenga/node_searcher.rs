@@ -217,6 +217,7 @@ fn search_compound_statement_object(
     }
 }
 
+#[allow(dead_code)]
 fn search_statement_object(
     stmt_obj: &language_object::statement_object::StatementObject,
     id: Uuid,

@@ -68,23 +68,23 @@ pub trait ToNode {
 // TODO this have C specific types. Move to C module
 impl ToNode for String {
     fn to_symbol_node(self, id: Uuid) -> Node {
-        return Node {
+        Node {
             id,
             node_type: NodeType::Symbol.as_u64(),
             content: self,
             tags: HashMap::new(),
             children: vec![],
-        };
+        }
     }
 
     fn to_str_node(self, node_type: u64) -> Node {
-        return Node {
-            node_type: node_type,
+        Node {
+            node_type,
             id: Uuid::new_v4(),
             content: self,
             tags: HashMap::new(),
             children: vec![],
-        };
+        }
     }
 }
 
@@ -114,21 +114,20 @@ pub trait ToTags {
 
 impl ToTags for Vec<(&str, Vec<Node>)> {
     fn to_tags(self) -> HashMap<String, Vec<Node>> {
-        return self.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
+        self.into_iter().map(|(k, v)| (k.to_string(), v)).collect()
     }
 }
 
 impl ToTags for Vec<(String, Vec<Node>)> {
     fn to_tags(self) -> HashMap<String, Vec<Node>> {
-        return self.into_iter().map(|(k, v)| (k, v)).collect();
+        self.into_iter().collect()
     }
 }
 
 impl ToTags for Vec<(&str, &str, u64)> {
     fn to_tags(self) -> HashMap<String, Vec<Node>> {
-        return self
-            .into_iter()
+        self.into_iter()
             .map(|(k, v, node_type)| (k.to_string(), vec![v.to_str_node(node_type)]))
-            .collect();
+            .collect()
     }
 }

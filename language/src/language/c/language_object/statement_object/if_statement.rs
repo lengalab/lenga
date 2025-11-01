@@ -65,7 +65,7 @@ pub struct IfStatement {
 
 impl IfStatement {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_if_statement(&self)
+        w.write_if_statement(self)
     }
 }
 

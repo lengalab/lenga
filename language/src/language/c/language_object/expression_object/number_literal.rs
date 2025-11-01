@@ -10,7 +10,7 @@ pub struct NumberLiteral {
 
 impl NumberLiteral {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_number_literal(&self)
+        w.write_number_literal(self)
     }
 }
 

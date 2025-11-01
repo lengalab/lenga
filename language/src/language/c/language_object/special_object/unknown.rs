@@ -10,7 +10,7 @@ pub struct Unknown {
 
 impl Unknown {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_unknown(&self)
+        w.write_unknown(self)
     }
 }
 

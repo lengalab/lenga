@@ -10,7 +10,7 @@ pub struct StringLiteral {
 
 impl StringLiteral {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_string_literal(&self)
+        w.write_string_literal(self)
     }
 }
 

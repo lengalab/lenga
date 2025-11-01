@@ -33,7 +33,7 @@ use crate::node::{Node, ToNode, ToTags};
 use super::{Writer, writer_error::WriterError};
 
 pub struct NodeWriter<'a> {
-    writer: Box<&'a mut dyn std::io::Write>,
+    writer: &'a mut dyn std::io::Write,
     cursor: NodeCursor<'a>,
 }
 
@@ -80,7 +80,7 @@ impl<'a> NodeCursor<'a> {
 }
 
 impl<'a> NodeWriter<'a> {
-    pub fn new(writer: Box<&'a mut dyn std::io::Write>) -> Self {
+    pub fn new(writer: &'a mut dyn std::io::Write) -> Self {
         NodeWriter {
             writer,
             cursor: NodeCursor::new(),

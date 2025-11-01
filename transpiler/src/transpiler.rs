@@ -1,11 +1,4 @@
-use std::collections::HashMap;
-
-use language::{
-    language::{Language, LanguageObject, c::C},
-    node::Node,
-};
-
-use language::language::c::language_object::LanguageObject as CLanguageObject;
+use language::language::{Language, c::C};
 
 pub enum SuportedLanguage {
     C(C),
@@ -13,12 +6,14 @@ pub enum SuportedLanguage {
 }
 
 impl SuportedLanguage {
+    #[allow(dead_code)]
     fn file_extension(&self) -> String {
         match self {
             SuportedLanguage::C(c) => c.file_extension(),
         }
     }
 
+    #[allow(dead_code)]
     fn name(&self) -> String {
         match self {
             SuportedLanguage::C(c) => c.name(),
@@ -64,6 +59,12 @@ pub fn nodes_to_text<T: Language>(language: &T, nodes: Vec<u8>) -> Result<String
 
 pub struct Transpiler {}
 
+impl Default for Transpiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Transpiler {
     pub fn new() -> Self {
         Self {}
@@ -72,21 +73,16 @@ impl Transpiler {
     fn get_language(&self, file_extension: &str) -> Option<SuportedLanguage> {
         let cext = C::new().file_extension();
         let lang: Option<SuportedLanguage> = match file_extension {
-            cext => Some(SuportedLanguage::C(C::new())),
+            ext if ext == cext => Some(SuportedLanguage::C(C::new())),
             _ => None,
         };
-        return lang;
+        lang
     }
 
     pub fn text_to_nodes(&self, content: &str, file_extension: &str) -> Result<Vec<u8>, String> {
         let language = self
             .get_language(file_extension)
-            .ok_or_else(|| {
-                format!(
-                    "Language with extension '{}' not registered",
-                    file_extension
-                )
-            })
+            .ok_or_else(|| format!("Language with extension '{file_extension}' not registered"))
             .unwrap();
         let nodes = language.text_to_nodes(content)?;
         Ok(nodes)
@@ -95,12 +91,7 @@ impl Transpiler {
     pub fn text_to_text(&self, content: &str, file_extension: &str) -> Result<String, String> {
         let language = self
             .get_language(file_extension)
-            .ok_or_else(|| {
-                format!(
-                    "Language with extension '{}' not registered",
-                    file_extension
-                )
-            })
+            .ok_or_else(|| format!("Language with extension '{file_extension}' not registered"))
             .unwrap();
         let output = language.text_to_text(content).unwrap();
         Ok(output)
@@ -109,12 +100,7 @@ impl Transpiler {
     pub fn nodes_to_text(&self, nodes: Vec<u8>, file_extension: &str) -> Result<String, String> {
         let language = self
             .get_language(file_extension)
-            .ok_or_else(|| {
-                format!(
-                    "Language with extension '{}' not registered",
-                    file_extension
-                )
-            })
+            .ok_or_else(|| format!("Language with extension '{file_extension}' not registered"))
             .unwrap();
         let output = language.nodes_to_text(nodes).unwrap();
         Ok(output)

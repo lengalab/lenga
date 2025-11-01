@@ -33,7 +33,7 @@ impl PartialEq for FunctionDefinition {
 
 impl FunctionDefinition {
     pub fn write(&self, w: &mut dyn Cursor) -> Result<(), WriterError> {
-        w.write_function_definition(&self)
+        w.write_function_definition(self)
     }
 }
 

@@ -63,6 +63,7 @@ fn replace_expression_object(
     }
 }
 
+#[allow(dead_code)]
 fn replace_statement_object(
     object: &mut language_object::statement_object::StatementObject,
     new_object: LanguageObject,

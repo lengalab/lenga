@@ -24,7 +24,7 @@ use crate::language::c::writers::Cursor;
 
 pub struct TextWriter<'a> {
     indent_level: usize,
-    writer: Box<&'a mut dyn std::io::Write>,
+    writer: &'a mut dyn std::io::Write,
     delimitator_stack: Vec<Delimitator>,
     style: style::Style,
     new_line: bool,
@@ -32,7 +32,7 @@ pub struct TextWriter<'a> {
 }
 
 impl<'a> TextWriter<'a> {
-    pub fn new(writer: Box<&'a mut dyn std::io::Write>, style: style::Style) -> Self {
+    pub fn new(writer: &'a mut dyn std::io::Write, style: style::Style) -> Self {
         TextWriter {
             indent_level: 0,
             writer,
@@ -57,7 +57,7 @@ impl<'a> TextWriter<'a> {
     }
 
     pub fn open_block(&mut self, delimitator: Delimitator) -> Result<(), WriterError> {
-        self.write(&format!("{}", delimitator.open()))?;
+        self.write(delimitator.open())?;
         self.delimitator_stack.push(delimitator);
         self.indent();
         Ok(())
@@ -69,12 +69,12 @@ impl<'a> TextWriter<'a> {
         if self.new_line {
             self.pad()?;
         }
-        self.write(&format!("{}", closing_delimitator.close()))?;
+        self.write(closing_delimitator.close())?;
         Ok(())
     }
 
     fn finish_line(&mut self, text: &str) -> Result<(), WriterError> {
-        self.write(&format!("{}\n", text))?;
+        self.write(&format!("{text}\n"))?;
         self.new_line = true;
         Ok(())
     }
@@ -102,7 +102,7 @@ impl<'a> TextWriter<'a> {
     }
 
     fn write(&mut self, text: &str) -> Result<(), WriterError> {
-        self.writer.write(text.as_bytes())?;
+        self.writer.write_all(text.as_bytes())?;
         self.new_line = false;
         Ok(())
     }
@@ -188,7 +188,7 @@ impl<'a> Cursor for TextWriter<'a> {
         &mut self,
         call_expression: &CallExpression,
     ) -> Result<(), WriterError> {
-        self.write(&format!("{}", call_expression.identifier))?;
+        self.write(&call_expression.identifier)?;
         let argf = call_expression
             .argument_list
             .iter()
@@ -225,7 +225,7 @@ impl<'a> Cursor for TextWriter<'a> {
         &mut self,
         function_declaration: &FunctionDeclaration,
     ) -> Result<(), WriterError> {
-        self.write(&format!("{}", function_declaration.return_type.as_str()))?;
+        self.write(function_declaration.return_type.as_str())?;
 
         if self.style.function_type_always_above {
             self.write(&format!("\n{}", function_declaration.identifier))?;
@@ -235,17 +235,11 @@ impl<'a> Cursor for TextWriter<'a> {
 
         let argf = function_declaration.parameter_list.iter().map(
             |FunctionParameter {
-                 id,
+                 id: _,
                  identifier,
                  param_type,
              }| {
-                |w: &mut Self| {
-                    w.write(&format!(
-                        "{} {}",
-                        param_type.as_str(),
-                        identifier.to_string()
-                    ))
-                }
+                move |w: &mut Self| w.write(&format!("{} {}", param_type.as_str(), identifier))
             },
         );
         self.write_paren_block(argf)?;
@@ -257,7 +251,7 @@ impl<'a> Cursor for TextWriter<'a> {
         &mut self,
         function_definition: &FunctionDefinition,
     ) -> Result<(), WriterError> {
-        self.write(&format!("{}", function_definition.return_type.as_str()))?;
+        self.write(function_definition.return_type.as_str())?;
 
         if self.style.function_type_always_above {
             self.write(&format!("\n{}", function_definition.identifier))?;
@@ -267,17 +261,11 @@ impl<'a> Cursor for TextWriter<'a> {
 
         let argf = function_definition.parameter_list.iter().map(
             |FunctionParameter {
-                 id,
+                 id: _,
                  identifier,
                  param_type,
              }| {
-                |w: &mut Self| {
-                    w.write(&format!(
-                        "{} {}",
-                        param_type.as_str(),
-                        identifier.to_string()
-                    ))
-                }
+                move |w: &mut Self| w.write(&format!("{} {}", param_type.as_str(), identifier))
             },
         );
         self.write_paren_block(argf)?;
@@ -299,7 +287,7 @@ impl<'a> Cursor for TextWriter<'a> {
         if_statement.condition.write(self)?;
         self.close_block()?;
 
-        self.write(&format!(" "))?;
+        self.write(" ")?;
 
         if_statement.body.write(self)?;
         if let Some(else_statement) = &if_statement.else_statement {

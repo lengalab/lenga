@@ -17,10 +17,8 @@ use crate::language::c::{
         },
         special_object::comment::Comment,
         statement_object::{
-            compound_statement::{
-                CompoundStatement, compound_statement_object::CompoundStatementObject,
-            },
-            if_statement::{self, ElseStatement, IfStatement, else_clause::ElseClause},
+            compound_statement::CompoundStatement,
+            if_statement::{ElseStatement, IfStatement, else_clause::ElseClause},
             return_statement::ReturnStatement,
         },
     },
@@ -47,9 +45,9 @@ impl From<TreeSitterParserError> for String {
         match err {
             TreeSitterParserError::SymbolAlreadyExists(_) => "Symbol already exists".to_string(),
             TreeSitterParserError::MissingSymbol(name) => {
-                format!("Missing symbol: {}", name)
+                format!("Missing symbol: {name}")
             }
-            TreeSitterParserError::WrongType(ty) => format!("Wrong type: {}", ty),
+            TreeSitterParserError::WrongType(ty) => format!("Wrong type: {ty}"),
         }
     }
 }
@@ -57,6 +55,12 @@ impl From<TreeSitterParserError> for String {
 pub struct TreeSitterParser<'a> {
     objects: Vec<CLanguageObject>,
     context: Context<'a>,
+}
+
+impl<'a> Default for TreeSitterParser<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<'a> TreeSitterParser<'a> {
@@ -184,7 +188,7 @@ impl<'a> TreeSitterParser<'a> {
                 // Ignore delimiters
                 panic!("Delimiter node should not be processed: {}", node.kind());
             }
-            other => panic!("Unknown node type: {}", other),
+            other => panic!("Unknown node type: {other}"),
         };
         Ok(result)
     }
@@ -239,7 +243,7 @@ impl<'a> TreeSitterParser<'a> {
                 )?,
             )),
             other => {
-                panic!("Unexpected declarator type: {}", other);
+                panic!("Unexpected declarator type: {other}");
             }
         }
     }
@@ -270,7 +274,7 @@ impl<'a> TreeSitterParser<'a> {
                 value: value.strip_suffix('"').unwrap().to_string(),
             });
         }
-        panic!("unexpected delimitators for string literal: {}", value);
+        panic!("unexpected delimitators for string literal: {value}");
     }
 
     fn return_statement_from_tree_sitter_node(
