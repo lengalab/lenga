@@ -10,7 +10,7 @@ mod tests {
     use field_inspect_derive::FieldInspect;
 
     #[derive(FieldInspect)]
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     struct TestStruct {
         pub name: String,
         pub description: String,

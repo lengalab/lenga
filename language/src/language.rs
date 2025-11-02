@@ -30,16 +30,6 @@ impl PartialEq for dyn LanguageObject {
     }
 }
 
-#[allow(dead_code)]
-impl dyn LanguageObject {
-    fn eq_dyn(&self, other: &dyn LanguageObject) -> bool {
-        let self_peq = self as &dyn PartialEqAny;
-        let other_peq = other as &dyn PartialEqAny;
-
-        self_peq.as_any().type_id() == other_peq.as_any().type_id() && self_peq.eq_dyn(other_peq)
-    }
-}
-
 pub trait Language {
     type Object: LanguageObject;
     type SourceFile;

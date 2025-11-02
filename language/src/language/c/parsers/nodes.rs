@@ -58,9 +58,7 @@ impl From<NodeParserError> for String {
         }
     }
 }
-#[allow(dead_code)]
 pub struct NodeParser<'a> {
-    objects: Vec<CLanguageObject>,
     context: Context<'a>,
 }
 
@@ -73,14 +71,12 @@ impl<'a> Default for NodeParser<'a> {
 impl<'a> NodeParser<'a> {
     pub fn new() -> Self {
         Self {
-            objects: vec![],
             context: Context::new(),
         }
     }
 
     fn branch(&'a self) -> Self {
         Self {
-            objects: Vec::new(),
             context: self.context.branch(),
         }
     }

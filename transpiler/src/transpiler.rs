@@ -6,20 +6,6 @@ pub enum SuportedLanguage {
 }
 
 impl SuportedLanguage {
-    #[allow(dead_code)]
-    fn file_extension(&self) -> String {
-        match self {
-            SuportedLanguage::C(c) => c.file_extension(),
-        }
-    }
-
-    #[allow(dead_code)]
-    fn name(&self) -> String {
-        match self {
-            SuportedLanguage::C(c) => c.name(),
-        }
-    }
-
     pub fn text_to_nodes(&self, content: &str) -> Result<Vec<u8>, String> {
         match self {
             SuportedLanguage::C(language) => text_to_nodes(language, content),

@@ -385,52 +385,6 @@ fn else_clause_to_proto(
     }
 }
 
-#[allow(dead_code)]
-fn c_statement_object_to_proto(
-    statement_object: c::language_object::statement_object::StatementObject,
-) -> proto::StatementObject {
-    match statement_object {
-        c::language_object::statement_object::StatementObject::CompoundStatement(
-            compound_statement,
-        ) => {
-            let compound_statement_msg = compound_statement_to_proto(compound_statement);
-            proto::StatementObject {
-                statement_object: Some(
-                    proto::statement_object::StatementObject::CompoundStatement(
-                        compound_statement_msg,
-                    ),
-                ),
-            }
-        }
-        c::language_object::statement_object::StatementObject::IfStatement(if_statement) => {
-            let if_statement_msg = if_statement_to_proto(if_statement);
-            proto::StatementObject {
-                statement_object: Some(proto::statement_object::StatementObject::IfStatement(
-                    if_statement_msg,
-                )),
-            }
-        }
-        c::language_object::statement_object::StatementObject::ReturnStatement(
-            return_statement,
-        ) => {
-            let return_statement_msg = return_statement_to_proto(return_statement);
-            proto::StatementObject {
-                statement_object: Some(proto::statement_object::StatementObject::ReturnStatement(
-                    return_statement_msg,
-                )),
-            }
-        }
-        c::language_object::statement_object::StatementObject::Unknown(unknown) => {
-            let unknown_msg = unknown_to_proto(unknown);
-            proto::StatementObject {
-                statement_object: Some(proto::statement_object::StatementObject::Unknown(
-                    unknown_msg,
-                )),
-            }
-        }
-    }
-}
-
 fn function_declaration_to_proto(
     function_declaration: c::language_object::declaration_object::function_declaration::FunctionDeclaration,
 ) -> proto::FunctionDeclaration {

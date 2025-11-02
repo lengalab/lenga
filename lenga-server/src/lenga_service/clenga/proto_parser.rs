@@ -340,37 +340,6 @@ fn else_clause_to_c_object(
     )
 }
 
-#[allow(dead_code)]
-fn statement_object_to_c_object(
-    statement_object: proto::StatementObject,
-) -> Result<c::language_object::statement_object::StatementObject, String> {
-    match statement_object
-        .statement_object
-        .ok_or("Empty Statement Object")?
-    {
-        proto::statement_object::StatementObject::CompoundStatement(compound_statement) => Ok(
-            c::language_object::statement_object::StatementObject::CompoundStatement(
-                compound_statement_to_c_object(compound_statement)?,
-            ),
-        ),
-        proto::statement_object::StatementObject::IfStatement(if_statement) => Ok(
-            c::language_object::statement_object::StatementObject::IfStatement(
-                if_statement_to_c_object(if_statement)?,
-            ),
-        ),
-        proto::statement_object::StatementObject::ReturnStatement(return_statement) => Ok(
-            c::language_object::statement_object::StatementObject::ReturnStatement(
-                return_statement_to_c_object(return_statement)?,
-            ),
-        ),
-        proto::statement_object::StatementObject::Unknown(unknown) => Ok(
-            c::language_object::statement_object::StatementObject::Unknown(unknown_to_c_object(
-                unknown,
-            )?),
-        ),
-    }
-}
-
 fn unknown_to_c_object(
     unknown: proto::Unknown,
 ) -> Result<c::language_object::special_object::unknown::Unknown, String> {
