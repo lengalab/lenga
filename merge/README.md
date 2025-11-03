@@ -15,7 +15,7 @@ Append to `.git/config`
 ```
 [merge "c-lenga-driver"]
 	name = A custom merge driver used to resolve conflicts in lenga files
-	driver = merge-driver %O %A %B
+	driver = merge %O %A %B
 ```
 
 Append to `.gitattributes`

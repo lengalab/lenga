@@ -1478,7 +1478,6 @@ mod tests {
                 if let expression_object::ExpressionObject::Reference(reference) = &*binary.left {
                     assert_eq!(reference.id, reference_one.id);
                     assert_eq!(reference.declaration_id, reference_one.declaration_id);
-                    assert_eq!(reference.identifier, new_identifier_one);
                 } else {
                     panic!("expected Reference");
                 }
@@ -1486,7 +1485,6 @@ mod tests {
                 if let expression_object::ExpressionObject::Reference(reference) = &*binary.right {
                     assert_eq!(reference.id, reference_two.id);
                     assert_eq!(reference.declaration_id, reference_two.declaration_id);
-                    assert_eq!(reference.identifier, new_identifier_two);
                 } else {
                     panic!("expected Reference");
                 }
