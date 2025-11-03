@@ -197,45 +197,6 @@ fn merge_expression_objects(
     Ok(merge)
 }
 
-fn merge_statement_objects(
-    origin: &statement_object::StatementObject,
-    ours: &statement_object::StatementObject,
-    theirs: &statement_object::StatementObject,
-) -> Result<statement_object::StatementObject, String> {
-    let merge = match (origin, ours, theirs) {
-        (
-            statement_object::StatementObject::CompoundStatement(origin_compound_statement),
-            statement_object::StatementObject::CompoundStatement(ours_compound_statement),
-            statement_object::StatementObject::CompoundStatement(theirs_compound_statement),
-        ) => statement_object::StatementObject::CompoundStatement(merge_compound_statement(
-            origin_compound_statement,
-            ours_compound_statement,
-            theirs_compound_statement,
-        )?),
-        (
-            statement_object::StatementObject::IfStatement(origin_if_statement),
-            statement_object::StatementObject::IfStatement(ours_if_statement),
-            statement_object::StatementObject::IfStatement(theirs_if_statement),
-        ) => statement_object::StatementObject::IfStatement(merge_if_statement(
-            origin_if_statement,
-            ours_if_statement,
-            theirs_if_statement,
-        )?),
-        (
-            statement_object::StatementObject::ReturnStatement(origin_return_statement),
-            statement_object::StatementObject::ReturnStatement(ours_return_statement),
-            statement_object::StatementObject::ReturnStatement(theirs_return_statement),
-        ) => statement_object::StatementObject::ReturnStatement(merge_return_statement(
-            origin_return_statement,
-            ours_return_statement,
-            theirs_return_statement,
-        )?),
-        _ => return Err("Objects are of different type".to_string()),
-    };
-
-    Ok(merge)
-}
-
 fn merge_compound_statement_object(
     origin: &compound_statement_object::CompoundStatementObject,
     ours: &compound_statement_object::CompoundStatementObject,
