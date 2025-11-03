@@ -59,20 +59,19 @@ impl CLenga for CLengaService {
             Uuid::parse_str(&req.id).map_err(|_err| Status::invalid_argument("Invalid id"))?;
 
         let mut files = self.files.lock().unwrap(); //TODO: Define how to de-poison lock
-        let file = match files.get(&file_id) {
-            Some(file_ast) => file_ast.clone(),
-            None => {
-                let mut file =
-                    File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
-                let mut content = Vec::new();
-                BufReader::new(&mut file).read_to_end(&mut content).unwrap(); //TODO: recover or abort
-                let c = C::new();
-                let src_file = c.parse_nodes(content).map_err(Status::internal)?;
+        let file = if let Some(file_ast) = files.get(&file_id) {
+            file_ast.clone()
+        } else {
+            let mut file =
+                File::open(&req.path).map_err(|err| Status::from_error(Box::new(err)))?;
+            let mut content = Vec::new();
+            BufReader::new(&mut file).read_to_end(&mut content).unwrap(); //TODO: recover or abort
+            let c = C::new();
+            let src_file = c.parse_nodes(content).map_err(Status::internal)?;
 
-                files.insert(file_id, src_file.clone());
+            files.insert(file_id, src_file.clone());
 
-                src_file
-            }
+            src_file
         };
 
         let ast = source_file_to_proto(file);

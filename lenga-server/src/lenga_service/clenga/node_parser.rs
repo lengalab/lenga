@@ -174,7 +174,7 @@ pub fn source_file_to_proto(
 ) -> proto::SourceFile {
     let mut code: Vec<proto::DeclarationObject> = Vec::new();
     for o in src_file.code {
-        code.push(c_declaration_object_to_proto(o))
+        code.push(c_declaration_object_to_proto(o));
     }
 
     proto::SourceFile {

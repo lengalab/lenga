@@ -147,7 +147,7 @@ fn source_file_to_c_object(
 
     let mut code: Vec<c::language_object::declaration_object::DeclarationObject> = Vec::new();
     for msg in src_file.code {
-        code.push(proto_to_c_declaration_object(msg)?)
+        code.push(proto_to_c_declaration_object(msg)?);
     }
 
     Ok(c::language_object::special_object::source_file::SourceFile { id, code })

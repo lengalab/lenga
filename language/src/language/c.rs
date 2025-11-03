@@ -69,7 +69,7 @@ impl Language for C {
         let objects: Vec<DeclarationObject> =
             TreeSitterParser::parse_with_tree(root_node.child(0).unwrap(), source_code)?
                 .into_iter()
-                .map(|o| o.try_into())
+                .map(std::convert::TryInto::try_into)
                 .collect::<Result<Vec<DeclarationObject>, language_object::ConversionError>>()
                 .map_err(|e: language_object::ConversionError| format!("{e:?}"))?;
 
@@ -111,7 +111,7 @@ fn dfs(walker: &mut tree_sitter::TreeCursor, source_code: &str) -> Vec<String> {
     lines.append(
         &mut format!("'{}': {}", node.kind(), node.content(source_code))
             .split('\n')
-            .map(|s| s.to_string())
+            .map(std::string::ToString::to_string)
             .collect::<Vec<String>>(),
     );
 

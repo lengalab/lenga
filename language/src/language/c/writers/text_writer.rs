@@ -145,14 +145,14 @@ impl<'a> TextWriter<'a> {
     }
 }
 
-impl<'a> Writer for TextWriter<'a> {
+impl Writer for TextWriter<'_> {
     fn write_file(&mut self, src_file: &SourceFile) -> Result<(), WriterError> {
         self.write_source_file(src_file)?;
         Ok(())
     }
 }
 
-impl<'a> Cursor for TextWriter<'a> {
+impl Cursor for TextWriter<'_> {
     fn write_source_file(&mut self, src_file: &SourceFile) -> Result<(), WriterError> {
         for object in &src_file.code {
             object.write(self)?;
@@ -291,7 +291,7 @@ impl<'a> Cursor for TextWriter<'a> {
 
         if_statement.body.write(self)?;
         if let Some(else_statement) = &if_statement.else_statement {
-            else_statement.write(self)?
+            else_statement.write(self)?;
         }
         self.finish_line("")?;
         Ok(())
@@ -320,15 +320,12 @@ impl<'a> Cursor for TextWriter<'a> {
         return_statement: &ReturnStatement,
     ) -> Result<(), WriterError> {
         self.write("return")?;
-        match &return_statement.value {
-            Some(value) => {
-                self.write(" ")?;
-                value.write(self)?;
-            }
-            None => {
-                self.writeln("return")?;
-                return Ok(());
-            }
+        if let Some(value) = &return_statement.value {
+            self.write(" ")?;
+            value.write(self)?;
+        } else {
+            self.writeln("return")?;
+            return Ok(());
         }
         Ok(())
     }
@@ -344,7 +341,7 @@ impl<'a> Cursor for TextWriter<'a> {
     ) -> Result<(), WriterError> {
         self.open_block(Delimitator::CurlyBrace)?;
         self.finish_line("")?;
-        for object in compound_statement.code_block.iter() {
+        for object in &compound_statement.code_block {
             self.write_statement(|w: &mut Self| {
                 object.write(w)?;
                 Ok(())
