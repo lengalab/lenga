@@ -6,9 +6,41 @@ on:
       - "**"
 
 jobs:
-  test-language:
-    name: Test language crate
+  test-lenga:
+    name: Test lenga crate
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install protobuf compiler (protoc)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run tests
+        run: cargo test --all-targets --all-features --verbose
+
+  test-lenga-field-inspect-derive:
+    name: Test lenga_field_inspect_derive crate
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -27,29 +59,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Run tests (language)
-        run: cargo test -p language --all-targets --all-features --verbose
-
-  test-transpiler:
-    name: Test transpiler crate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache Cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Run tests (transpiler)
-        run: cargo test -p transpiler --all-targets --all-features --verbose
+      - name: Run tests (lenga_field_inspect_derive)
+        working-directory: lenga_field_inspect_derive
+        run: cargo test --all-targets --all-features --verbose

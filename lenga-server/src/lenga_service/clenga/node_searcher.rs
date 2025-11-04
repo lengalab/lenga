@@ -1,4 +1,4 @@
-use language::language::c::language_object::{
+use lenga::language::c::language_object::{
     self, LanguageObject, declaration_object::DeclarationObject,
     expression_object::ExpressionObject,
     statement_object::compound_statement::compound_statement_object::CompoundStatementObject,
@@ -209,29 +209,6 @@ fn search_compound_statement_object(
             None
         }
         CompoundStatementObject::Unknown(unknown) => {
-            if unknown.id == id {
-                return Some(LanguageObject::Unknown(unknown.clone()));
-            }
-            None
-        }
-    }
-}
-
-fn search_statement_object(
-    stmt_obj: &language_object::statement_object::StatementObject,
-    id: Uuid,
-) -> Option<LanguageObject> {
-    match stmt_obj {
-        language_object::statement_object::StatementObject::CompoundStatement(stmt) => {
-            search_compound_statement(stmt, id)
-        }
-        language_object::statement_object::StatementObject::IfStatement(stmt) => {
-            search_if_statement(stmt, id)
-        }
-        language_object::statement_object::StatementObject::ReturnStatement(stmt) => {
-            search_return_statement(stmt, id)
-        }
-        language_object::statement_object::StatementObject::Unknown(unknown) => {
             if unknown.id == id {
                 return Some(LanguageObject::Unknown(unknown.clone()));
             }

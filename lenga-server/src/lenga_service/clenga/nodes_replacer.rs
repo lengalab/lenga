@@ -1,4 +1,4 @@
-use language::language::c::language_object::{
+use lenga::language::c::language_object::{
     self, LanguageObject, declaration_object::DeclarationObject,
     statement_object::compound_statement::compound_statement_object::CompoundStatementObject,
 };
@@ -58,26 +58,6 @@ fn replace_expression_object(
             replace_string_literal(obj, new_object)
         }
         language_object::expression_object::ExpressionObject::Unknown(obj) => {
-            replace_unknown(obj, new_object)
-        }
-    }
-}
-
-fn replace_statement_object(
-    object: &mut language_object::statement_object::StatementObject,
-    new_object: LanguageObject,
-) -> Option<LanguageObject> {
-    match object {
-        language_object::statement_object::StatementObject::CompoundStatement(obj) => {
-            replace_compound_statement(obj, new_object)
-        }
-        language_object::statement_object::StatementObject::IfStatement(obj) => {
-            replace_if_statement(obj, new_object)
-        }
-        language_object::statement_object::StatementObject::ReturnStatement(obj) => {
-            replace_return_statement(obj, new_object)
-        }
-        language_object::statement_object::StatementObject::Unknown(obj) => {
             replace_unknown(obj, new_object)
         }
     }
@@ -466,7 +446,7 @@ mod tests {
     use core::panic;
 
     use super::*;
-    use language::language::c;
+    use lenga::language::c;
     use uuid::Uuid;
 
     #[test]
