@@ -12,7 +12,7 @@ exclude = ["./lenga_field_inspect_derive"]
 
 [lib]
 name = "lenga"
-path = "language/src/lib.rs"
+path = "language/lib.rs"
 doctest = false
 
 [[bin]]
@@ -22,12 +22,12 @@ doctest = false
 
 [[bin]]
 name = "merge"
-path = "merge/src/main.rs"
+path = "merge/main.rs"
 doctest = false
 
 [[bin]]
 name = "transpile"
-path = "transpile/src/main.rs"
+path = "transpile/main.rs"
 doctest = false
 
 [dependencies]
