@@ -534,6 +534,8 @@ dependencies = [
 [[package]]
 name = "lenga_field_inspect_derive"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e8c0a0ab85d3896b68993bc6684440bc1cbeebdd3c469f2bf4e6f1e518f72ce"
 dependencies = [
  "proc-macro2",
  "quote",
