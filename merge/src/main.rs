@@ -3,7 +3,7 @@ pub mod merger;
 use std::{
     env,
     fs::{self, File},
-    io::{self, ErrorKind, Read},
+    io::{self, BufReader, ErrorKind, Read},
     path::Path,
 };
 
@@ -31,20 +31,29 @@ fn main() -> io::Result<()> {
 
     let c = C::new();
 
-    let file_origin = File::open(&path_origin)?;
-    let content_origin: Vec<u8> = file_origin.bytes().map(|b| b.unwrap()).collect();
+    let mut file_origin = File::open(&path_origin)?;
+    let mut content_origin = Vec::new();
+    BufReader::new(&mut file_origin)
+        .read_to_end(&mut content_origin)
+        .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
     let src_file_origin = c
         .parse_nodes(content_origin)
         .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
 
-    let file_ours = File::open(&path_ours)?;
-    let content_ours: Vec<u8> = file_ours.bytes().map(|b| b.unwrap()).collect();
+    let mut file_ours = File::open(&path_ours)?;
+    let mut content_ours = Vec::new();
+    BufReader::new(&mut file_ours)
+        .read_to_end(&mut content_ours)
+        .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
     let src_file_ours = c
         .parse_nodes(content_ours)
         .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
 
-    let file_theirs = File::open(&path_theirs)?;
-    let content_theirs: Vec<u8> = file_theirs.bytes().map(|b| b.unwrap()).collect();
+    let mut file_theirs = File::open(&path_theirs)?;
+    let mut content_theirs = Vec::new();
+    BufReader::new(&mut file_theirs)
+        .read_to_end(&mut content_theirs)
+        .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
     let src_file_theirs = c
         .parse_nodes(content_theirs)
         .map_err(|err| io::Error::new(ErrorKind::InvalidData, err))?;
@@ -53,11 +62,9 @@ fn main() -> io::Result<()> {
 
     let merged_file = merger
         .merge(src_file_origin, src_file_ours, src_file_theirs)
-        .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+        .map_err(io::Error::other)?;
 
-    let merged_data = c
-        .write_to_nodes(merged_file)
-        .map_err(|err| io::Error::new(ErrorKind::Other, err))?;
+    let merged_data = c.write_to_nodes(merged_file).map_err(io::Error::other)?;
 
     fs::write(Path::new(&path_ours), merged_data)?;
 

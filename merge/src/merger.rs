@@ -5,6 +5,12 @@ use lenga::language::c::language_object::{
 
 pub struct Merger {}
 
+impl Default for Merger {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Merger {
     pub fn new() -> Self {
         Self {}
@@ -23,7 +29,7 @@ impl Merger {
 
         for (i, object) in origin.code.iter().enumerate() {
             merge.code.push(merge_declaration_objects(
-                &object,
+                object,
                 &ours.code[i],
                 &theirs.code[i],
             )?);
@@ -447,7 +453,7 @@ fn merge_function_declaration(
     let mut m_parameter_list = vec![];
     for (i, param) in origin.parameter_list.iter().enumerate() {
         m_parameter_list.push(merge_function_parameter(
-            &param,
+            param,
             &ours.parameter_list[i],
             &theirs.parameter_list[i],
         )?);
@@ -491,7 +497,7 @@ fn merge_function_definition(
     let mut m_parameter_list = vec![];
     for (i, param) in origin.parameter_list.iter().enumerate() {
         m_parameter_list.push(merge_function_parameter(
-            &param,
+            param,
             &ours.parameter_list[i],
             &theirs.parameter_list[i],
         )?);
@@ -524,7 +530,7 @@ fn preproc_include_changes(
     alt: &declaration_object::preproc_include::PreprocInclude,
 ) -> Option<declaration_object::preproc_include::PreprocInclude> {
     if alt.content != origin.content {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -553,7 +559,7 @@ fn assignment_expression_changes(
     alt: &expression_object::assignment_expression::AssignmentExpression,
 ) -> Option<expression_object::assignment_expression::AssignmentExpression> {
     if alt.id_declaration != origin.id_declaration || alt.identifier != origin.identifier {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -584,7 +590,7 @@ fn binary_expression_changes(
     alt: &expression_object::binary_expression::BinaryExpression,
 ) -> Option<expression_object::binary_expression::BinaryExpression> {
     if alt.operator != origin.operator {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -617,7 +623,7 @@ fn call_expression_changes(
     alt: &expression_object::call_expression::CallExpression,
 ) -> Option<expression_object::call_expression::CallExpression> {
     if alt.id_declaration != origin.id_declaration || alt.identifier != origin.identifier {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -631,7 +637,7 @@ fn merge_call_expression(
     let mut m_argument_list = vec![];
     for (i, arg) in origin.argument_list.iter().enumerate() {
         m_argument_list.push(merge_expression_objects(
-            &arg,
+            arg,
             &ours.argument_list[i],
             &theirs.argument_list[i],
         )?);
@@ -656,7 +662,7 @@ fn number_literal_changes(
     alt: &expression_object::number_literal::NumberLiteral,
 ) -> Option<expression_object::number_literal::NumberLiteral> {
     if alt.value != origin.value {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -687,7 +693,7 @@ fn reference_changes(
     if alt.declaration_id != origin.declaration_id
     /*|| alt.identifier != origin.identifier*/
     {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -716,7 +722,7 @@ fn string_literal_changes(
     alt: &expression_object::string_literal::StringLiteral,
 ) -> Option<expression_object::string_literal::StringLiteral> {
     if alt.value != origin.value {
-        return Some(alt.clone());
+        Some(alt.clone())
     } else {
         None
     }
@@ -748,7 +754,7 @@ fn merge_compound_statement(
     let mut m_code_block = vec![];
     for (i, element) in origin.code_block.iter().enumerate() {
         m_code_block.push(merge_compound_statement_object(
-            &element,
+            element,
             &ours.code_block[i],
             &theirs.code_block[i],
         )?);
@@ -960,7 +966,6 @@ fn merge_return_statement(
 }
 
 #[cfg(test)]
-
 mod tests {
     use super::*;
     use lenga::language::c::{
