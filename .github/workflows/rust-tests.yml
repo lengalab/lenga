@@ -17,6 +17,12 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install protobuf compiler (protoc)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y protobuf-compiler
+
+
       - name: Cache Cargo
         uses: actions/cache@v4
         with:
@@ -31,7 +37,7 @@ jobs:
       - name: Run tests
         run: cargo test --all-targets --all-features --verbose
 
-  test-field-inspect-derive:
+  test-lenga-field-inspect-derive:
     name: Test lenga_field_inspect_derive crate
     runs-on: ubuntu-latest
 

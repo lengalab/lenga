@@ -21,5 +21,9 @@ jobs:
               with:
                   components: rustfmt
 
-            - name: Check formatting
+            - name: Check formatting (lenga)
+              run: cargo fmt --all -- --check
+            
+            - name: Check formatting (lenga_field_inspect_derive)
+              working-directory: lenga_field_inspect_derive
               run: cargo fmt --all -- --check
