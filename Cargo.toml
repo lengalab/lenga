@@ -31,7 +31,7 @@ path = "transpile/main.rs"
 doctest = false
 
 [dependencies]
-lenga_field_inspect_derive = { path = "./lenga_field_inspect_derive", version= "1.0.0" }
+lenga_field_inspect_derive = "1.0.0"
 tree-sitter = "0.25.8"
 tree-sitter-c = "0.24.1"
 tonic = "0.11"
@@ -48,10 +48,6 @@ sha2 = "0.10"
 [dependencies.uuid]
 version = "1.17.0"
 features = ["v4", "serde"]
-
-[workspace]
-resolver = "3"
-members = ["lenga_field_inspect_derive"]
 
 [build-dependencies]
 tonic-build = "0.11"
