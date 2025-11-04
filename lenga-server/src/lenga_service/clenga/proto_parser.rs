@@ -1,4 +1,4 @@
-use language::language::c::{self};
+use lenga::language::c::{self};
 use uuid::Uuid;
 
 use crate::lenga_service::clenga::proto;
@@ -684,7 +684,7 @@ fn compound_statement_object_to_c_object(statement: proto::CompoundStatementObje
 mod tests {
     use super::*;
     use crate::lenga_service::clenga::proto;
-    use language::language::c::{self, language_object::statement_object};
+    use lenga::language::c::{self, language_object::statement_object};
     use uuid::Uuid;
 
     #[test]
@@ -1150,7 +1150,7 @@ mod tests {
             }
             _ => panic!("expected compound statement"),
         }
-        let language::language::c::language_object::statement_object::if_statement::ElseStatement::ElseClause(
+        let lenga::language::c::language_object::statement_object::if_statement::ElseStatement::ElseClause(
             else_statement) = c_if.else_statement.unwrap() else{
                         panic!("expected ElseClause")
             };

@@ -1,4 +1,4 @@
-use language::language::c::language_object::{
+use lenga::language::c::language_object::{
     self, LanguageObject, declaration_object::DeclarationObject,
     expression_object::ExpressionObject,
     statement_object::compound_statement::compound_statement_object::CompoundStatementObject,

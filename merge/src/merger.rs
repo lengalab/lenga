@@ -1,4 +1,4 @@
-use language::language::c::language_object::{
+use lenga::language::c::language_object::{
     declaration_object, expression_object, special_object,
     statement_object::{self, compound_statement::compound_statement_object},
 };
@@ -963,7 +963,7 @@ fn merge_return_statement(
 
 mod tests {
     use super::*;
-    use language::language::c::{
+    use lenga::language::c::{
         c_type::CType,
         language_object::statement_object::compound_statement::compound_statement_object,
     };

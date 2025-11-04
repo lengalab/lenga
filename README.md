@@ -19,7 +19,7 @@ lenga = "1.0.0"
 ```
 
 ``` rust
-use language::language::{Language, c::C};
+use lenga::language::{Language, c::C};
 
 fn main() {
     let lenga_file = File::open(&path).unwrap();

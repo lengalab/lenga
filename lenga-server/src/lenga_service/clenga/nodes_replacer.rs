@@ -1,4 +1,4 @@
-use language::language::c::language_object::{
+use lenga::language::c::language_object::{
     self, LanguageObject, declaration_object::DeclarationObject,
     statement_object::compound_statement::compound_statement_object::CompoundStatementObject,
 };
@@ -446,7 +446,7 @@ mod tests {
     use core::panic;
 
     use super::*;
-    use language::language::c;
+    use lenga::language::c;
     use uuid::Uuid;
 
     #[test]

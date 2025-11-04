@@ -1,4 +1,4 @@
-use language::language::{
+use lenga::language::{
     Language,
     c::{self, C},
 };

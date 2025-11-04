@@ -11,7 +11,7 @@ build = "build.rs"
 exclude = ["./lenga_field_inspect_derive"]
 
 [lib]
-name = "language"
+name = "lenga"
 path = "language/src/lib.rs"
 doctest = false
 

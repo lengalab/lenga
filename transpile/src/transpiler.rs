@@ -1,4 +1,4 @@
-use language::language::{Language, c::C};
+use lenga::language::{Language, c::C};
 
 pub enum SuportedLanguage {
     C(C),

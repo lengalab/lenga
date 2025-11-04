@@ -7,7 +7,7 @@ use std::{
     path::Path,
 };
 
-use language::language::{Language, c::C};
+use lenga::language::{Language, c::C};
 
 use crate::merger::Merger;
 
