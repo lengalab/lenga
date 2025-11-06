@@ -323,9 +323,6 @@ impl Cursor for TextWriter<'_> {
         if let Some(value) = &return_statement.value {
             self.write(" ")?;
             value.write(self)?;
-        } else {
-            self.writeln("return")?;
-            return Ok(());
         }
         Ok(())
     }
