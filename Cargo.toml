@@ -1,6 +1,6 @@
 [package]
 name = "lenga"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Gerónimo Bejamín Palavecino <gbpalavecino01@gmail.com>", "Patricio Tourne Passarino <contact@patricios.space>"]
 edition = "2024"
 description = "Tools for the Lenga develop paradigm"
