@@ -82,11 +82,18 @@ impl<'a> NodeParser<'a> {
     }
 
     pub fn read_file(&mut self, nodes: Vec<u8>) -> Result<SourceFile, String> {
-        let mut nodes_loaded = bincode::deserialize::<Vec<Node>>(&nodes).unwrap();
-        assert_eq!(nodes_loaded.len(), 1);
-        let file = nodes_loaded.pop().unwrap();
-        assert_eq!(file.node_type, NodeType::SourceFile.as_u64());
-        Ok(self.source_file_from_node(file)?)
+        if nodes.is_empty() {
+            Ok(SourceFile {
+                id: Uuid::new_v4(),
+                code: vec![],
+            })
+        } else {
+            let mut nodes_loaded = bincode::deserialize::<Vec<Node>>(&nodes).unwrap();
+            assert_eq!(nodes_loaded.len(), 1);
+            let file = nodes_loaded.pop().unwrap();
+            assert_eq!(file.node_type, NodeType::SourceFile.as_u64());
+            Ok(self.source_file_from_node(file)?)
+        }
     }
 
     fn clanguageobject_from_node(
