@@ -8,7 +8,7 @@ use std::net::SocketAddr;
 use tonic::{Request, Response, Status, transport::Server};
 
 mod proto {
-    tonic::include_proto!("lenga");
+    include!("../rpc/generated/lenga.rs");
 }
 
 use proto::{

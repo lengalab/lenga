@@ -17,7 +17,7 @@ pub mod nodes_replacer;
 pub mod proto_parser;
 
 pub mod proto {
-    tonic::include_proto!("c.lenga");
+    include!("../../rpc/generated/c.lenga.rs");
 }
 
 // Service Interface
