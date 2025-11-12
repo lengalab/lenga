@@ -66,12 +66,16 @@ impl Language for C {
             "Root node should be a translation unit"
         );
 
-        let objects: Vec<DeclarationObject> =
-            TreeSitterParser::parse_with_tree(root_node.child(0).unwrap(), source_code)?
+        let objects: Vec<DeclarationObject> = match root_node.child(0) {
+            Some(node) => TreeSitterParser::parse_with_tree(node, source_code)?
                 .into_iter()
                 .map(std::convert::TryInto::try_into)
                 .collect::<Result<Vec<DeclarationObject>, language_object::ConversionError>>()
-                .map_err(|e: language_object::ConversionError| format!("{e:?}"))?;
+                .map_err(|e: language_object::ConversionError| format!("{e:?}"))?,
+            None => {
+                vec![]
+            }
+        };
 
         Ok(CSourceFile {
             id: Uuid::new_v4(),
