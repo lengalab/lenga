@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/stpec/v2.0.
 - Tonic gRPC code generation added to source code to remove dependencies to a proto compiler for users.
 - Handling of C and C Lenga empty files.
 
+
 ## 1.0.1
 
 ### Fixed
